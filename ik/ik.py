@@ -46,7 +46,7 @@ for targets in target:
 theta1=angle_list[0][0]
 theta2=angle_list[0][1]
 theta3=angle_list[0][2]
-
+print(theta1,theta2,theta3)
 pos=forward_kinematics(theta1,theta2,theta3,L1,L2,L3)
 print("The positions of the arm is :",pos)
     

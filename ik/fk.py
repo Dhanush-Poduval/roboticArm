@@ -2,12 +2,19 @@ import numpy as np
 from dh import dh_transform
 import math
 
-def forward_kinematics(theta1,theta2,theta3,L1,L2,L3):
-    rad_1=math.radians(theta1)
-    rad_2=math.radians(theta2)
-    rad_3=math.radians(theta3)
-    A1=dh_transform(L1,0,0,rad_1)
-    A2=dh_transform(L2,0,0,rad_2)
-    A3=dh_transform(L3,0,0,rad_3)
-    T=A1 @ A2 @ A3
-    return T[:3,3]
+def forward_kinematics(theta1, theta2, theta3 ,L1 ,L2 ,L3):
+    
+    t1 = math.radians(theta1)
+    t2 = math.radians(theta2)
+    t3 = math.radians(theta3)
+
+    x1 = L1 * math.cos(t1)
+    y1 = L1 * math.sin(t1)
+
+    x2 = x1 + L2 * math.cos(t1 + t2)
+    y2 = y1 + L2 * math.sin(t1 + t2)
+
+    x3 = x2 + L3 * math.cos(t1 + t2 + t3)
+    y3 = y2 + L3 * math.sin(t1 + t2 + t3)
+
+    return (x1, y1, x2, y2, x3, y3)
