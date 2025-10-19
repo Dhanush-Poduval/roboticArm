@@ -1,5 +1,5 @@
 import math
-
+import matplotlib.pyplot as plt
 
 L1, L2, L3 = 10, 10, 5
 
@@ -15,8 +15,29 @@ def inverse_kinematics(x, y):
     cos_elbow = max(-1, min(1, cos_elbow))
     theta3 = math.acos(cos_elbow)
     return math.degrees(theta1), math.degrees(theta2), math.degrees(theta3)
-target = (12, 8)
-angles = inverse_kinematics(*target)
-print("Target:", target)
-print("Joint Angles:", angles)
+def plot(angles):
+    theta1,theta2,theta3=[math.radians(i) for i in angles]
+    x0,y0=0,0
+    x1,y1=L1*math.cos(theta1),L1*math.sin(theta1)
+    x2,y2=x1+L2*math.cos(theta1+theta2),y1+L2*math.sin(theta1+theta2)
+    x3,y3=x2+L3*math.cos(theta1+theta2+theta3),y2+L3*math.sin(theta1+theta2+theta3)
+    plt.figure()
+    plt.plot([x0,x1,x2,x3],[y0,y1,y2,y3],linewidth=3,markersize=8,marker='o')
+    plt.plot(x3,y3,'rx',markersize=10)
+    plt.xlim(-30,30)
+    plt.ylim(-5,30)
+    plt.grid()
+    plt.gca().set_aspect('equal',adjustable='box')
+    plt.show()
+
+target =  [(12, 8), (15, 5), (30,0)]
+for targets in target:
+    angles=inverse_kinematics(*targets)
+    print(f'Target:{targets}')
+    if angles:
+        print(f'Joint Angles :{angles}')
+        plot(angles)
+    else:
+        print("Target out of reach")
+        
 
