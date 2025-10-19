@@ -53,12 +53,10 @@ def process_samples(samples, split):
                 data = json.load(f)
             vessels = data.get("Vessels", {}).values()
             for obj in vessels:
-                # Loop through all vessel types
                 for type_name in obj.get("VesselType_ClassNames", []):
                     label = type_name.lower()
                     if label not in classes:
                         continue
-                    # Get bounding box from mask
                     bbox = mask_to_bbox(folder , obj.get("MaskFilePath", ""))
                     if not bbox:
                         continue
