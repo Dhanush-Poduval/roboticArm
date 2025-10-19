@@ -1,6 +1,6 @@
 import math
 import matplotlib.pyplot as plt
-
+from fk import forward_kinematics
 L1, L2, L3 = 10, 10, 5
 
 def inverse_kinematics(x, y):
@@ -33,13 +33,22 @@ def plot(angles):
     plt.show()
 
 target =  [(12, 8), (15, 5), (30,0)]
+angle_list=[]
 for targets in target:
     angles=inverse_kinematics(*targets)
+    angle_list.append(angles)
     print(f'Target:{targets}')
     if angles:
         print(f'Joint Angles :{angles}')
         plot(angles)
     else:
         print("Target out of reach")
+theta1=angle_list[0][0]
+theta2=angle_list[0][1]
+theta3=angle_list[0][2]
+
+pos=forward_kinematics(theta1,theta2,theta3,L1,L2,L3)
+print("The positions of the arm is :",pos)
+    
         
 

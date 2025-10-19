@@ -1,5 +1,5 @@
 import numpy as np
-from .dh import dh_transform
+from dh import dh_transform
 import math
 
 def forward_kinematics(theta1,theta2,theta3,d1,L2,L3):
