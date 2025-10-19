@@ -14,6 +14,8 @@ def inverse_kinematics(x, y):
     cos_elbow = (L1**2 + L2**2 - r**2) / (2 * L1 * L2)
     cos_elbow = max(-1, min(1, cos_elbow))
     theta3 = math.acos(cos_elbow)
+    if x>L1+L2+L3 or y>L1+L2+L3 or r>L1+L2:
+        return False
     return math.degrees(theta1), math.degrees(theta2), math.degrees(theta3)
 def plot(angles):
     theta1,theta2,theta3=[math.radians(i) for i in angles]
