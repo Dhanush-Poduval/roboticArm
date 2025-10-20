@@ -1,5 +1,4 @@
 import numpy as np
-from dh import dh_transform
 import math
 
 def forward_kinematics(theta1, theta2, theta3 ,L1 ,L2 ,L3):
@@ -16,5 +15,5 @@ def forward_kinematics(theta1, theta2, theta3 ,L1 ,L2 ,L3):
 
     x3 = x2 + L3 * math.cos(t1 + t2 + t3)
     y3 = y2 + L3 * math.sin(t1 + t2 + t3)
-
-    return (x1, y1, x2, y2, x3, y3)
+    
+    return (x1, y1, x2, y2, x3, y3)#this is just to check the position of like all the joints of the arm 

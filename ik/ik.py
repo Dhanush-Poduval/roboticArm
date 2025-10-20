@@ -1,5 +1,7 @@
 import math
 import matplotlib.pyplot as plt
+import numpy as np
+import time
 from fk import forward_kinematics
 L1, L2, L3 = 10, 10, 5
 
@@ -30,8 +32,20 @@ def plot(angles):
     plt.grid()
     plt.gca().set_aspect('equal',adjustable='box')
     plt.show()
+def move_arm(start , end , steps=40):
+    
+    a1_arr=np.linspace(start[0],end[0],steps)
+    a2_arr = np.linspace(start[1], end[1], steps)
+    a3_arr= np.linspace(start[2],end[2], steps)
+    for i in range(steps+1):
+        a1 = a1_arr[i]
+        a2 = a2_arr[i]
+        a3 = a3_arr[i]
+        plot((a1, a2, a3))
+        time.sleep(0.05)
 
-target =  [(12, 8), (15, 5), (30,0)]
+
+target =  [(13,9), (15, 5), (12,9)]
 angle_list=[]
 for targets in target:
     angles=inverse_kinematics(*targets)
@@ -39,9 +53,13 @@ for targets in target:
     print(f'Target:{targets}')
     if angles:
         print(f'Joint Angles :{angles}')
-        plot(angles)
     else:
         print("Target out of reach")
+for i in range(len(angle_list) - 1):
+    start = angle_list[i]
+    end = angle_list[i + 1]
+    if start and end:
+        move_arm(start, end)
 theta1=angle_list[0][0]
 theta2=angle_list[0][1]
 theta3=angle_list[0][2]
