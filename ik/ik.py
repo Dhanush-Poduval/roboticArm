@@ -4,17 +4,16 @@ from fk import forward_kinematics
 L1, L2, L3 = 10, 10, 5
 
 def inverse_kinematics(x, y):
-    wx = x - L3 * (x / math.sqrt(x**2 + y**2))
-    wy = y - L3 * (y / math.sqrt(x**2 + y**2))
-    r = math.sqrt(wx**2 + wy**2)
-    theta1 = math.atan2(wy, wx)
-    cos_angle = (L1**2 + r**2 - L2**2) / (2 * L1 * r)
-    cos_angle = max(-1, min(1, cos_angle))
-    theta2 = math.acos(cos_angle)
-    cos_elbow = (L1**2 + L2**2 - r**2) / (2 * L1 * L2)
-    cos_elbow = max(-1, min(1, cos_elbow))
-    theta3 = math.acos(cos_elbow)
-    if x>L1+L2+L3 or y>L1+L2+L3 or r>L1+L2:
+    r = math.sqrt(x**2 + y**2)
+    wx=x-L3*(x/r)
+    wy=y-L3*(y/r)   
+    rw=math.sqrt(wx**2 + wy**2)
+    cos_theta2 = (rw**2 - L1**2 - L2**2) / (2 * L1 * L2)
+    cos_theta2 = max(-1, min(1, cos_theta2))
+    theta2 = math.acos(cos_theta2)
+    theta1 = math.atan2(wy, wx)-math.atan2(L2 * math.sin(theta2), L1 + L2 * math.cos(theta2))
+    theta3 = math.atan2(y - wy, x - wx) - (theta1 + theta2)
+    if r>L1+L2+L3:
         return False
     return math.degrees(theta1), math.degrees(theta2), math.degrees(theta3)
 def plot(angles):
