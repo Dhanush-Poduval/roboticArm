@@ -32,7 +32,7 @@ def plot(angles):
     plt.grid()
     plt.gca().set_aspect('equal',adjustable='box')
     plt.show()
-def move_arm(start , end , steps=40):
+def move_arm(start , end , steps=50):
     
     a1_arr=np.linspace(start[0],end[0],steps)
     a2_arr = np.linspace(start[1], end[1], steps)
@@ -43,11 +43,41 @@ def move_arm(start , end , steps=40):
         a3 = a3_arr[i]
         plot((a1, a2, a3))
         time.sleep(0.05)
+def automate(targets,steps=50):
+    plt.ion()
+    fig,ax=plt.subplots()
+    ax.set_xlim(-25,25)
+    ax.set_ylim(-5,25)
+    ax.set_aspect('equal')
+    ax.grid(True)
+
+    for target in targets:
+        x,y=target
+        angles=inverse_kinematics(x,y)
+        if not angles:
+            print(f"Taget {target} out of reach")
+        theta1,theta2,theta3=angles
+        print(f"Moving to target {target} lesgo")
+        for i in np.linspace(0,1 ,steps):
+            (x0,y0),(x1,y1),(x2,y2)=forward_kinematics(theta1*i,theta2*i,theta3*i,L1,L2,L3)
+            ax.clear()
+            ax.plot([x0,x1,x2],[y0,y1,y2],'o-',linewidth=3,markersize=8)
+            ax.plot(x,y,'rx',markersize=10)
+            ax.set_ylim(-5, 25)
+            ax.set_aspect('equal')
+            ax.grid(True)
+            plt.draw()
+            plt.pause(0.02)
+    plt.ioff()
+    plt.show()
+
+        
 
 
-target =  [(13,9), (15, 5), (12,9)]
+target =  [(13,9), (15, 5), (1,6)]
 angle_list=[]
-for targets in target:
+automate(target)
+'''for targets in target:
     angles=inverse_kinematics(*targets)
     angle_list.append(angles)
     print(f'Target:{targets}')
@@ -55,7 +85,7 @@ for targets in target:
         print(f'Joint Angles :{angles}')
     else:
         print("Target out of reach")
-for i in range(len(angle_list) - 1):
+for i in range(len(angle_list)):
     start = angle_list[i]
     end = angle_list[i + 1]
     if start and end:
@@ -65,7 +95,7 @@ theta2=angle_list[0][1]
 theta3=angle_list[0][2]
 print(theta1,theta2,theta3)
 pos=forward_kinematics(theta1,theta2,theta3,L1,L2,L3)
-print("The positions of the arm is :",pos)
+print("The positions of the arm is :",pos)'''
     
         
 
