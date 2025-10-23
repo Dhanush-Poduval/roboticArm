@@ -1,15 +1,5 @@
 <?xml version="1.0"?>
 <robot name="four_dof_arm">
-    <!-- 
-    ===================================================================
-    CONFIGURATION: 4 DOF Serial Manipulator (R-R-R-R)
-    - J1: Base Yaw (Z-axis)
-    - J2: Shoulder Pitch (Y-axis)
-    - J3: Elbow Pitch (Y-axis)
-    - J4: Wrist Roll (X-axis)
-    ===================================================================
-    -->
-
     <!-- Global Parameters for visualization and dynamics -->
     <material name="blue">
         <color rgba="0.1 0.1 0.8 1.0"/>
