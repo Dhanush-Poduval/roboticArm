@@ -1,14 +1,15 @@
 import pybullet
 import time
 import pybullet_data
+import os
 
 
 physicsClient=pybullet.connect(pybullet.GUI)
 pybullet.setAdditionalSearchPath(pybullet_data.getDataPath())
 
 pybullet.loadURDF("plane.urdf")
-
-robot_arm=pybullet.loadURDF('kuka_iiwa/model.urdf',useFixedBase=True)
+pybullet.setAdditionalSearchPath('/Users/dhanushpoduval/Desktop/interDomain/')
+robot_arm = pybullet.loadURDF('four_dof_arm.urdf', useFixedBase=True, basePosition=[0,0,0])
 
 print(pybullet.getNumJoints(robot_arm))
 
