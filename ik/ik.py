@@ -3,25 +3,29 @@ import matplotlib.pyplot as plt
 import numpy as np
 import time
 from fk import forward_kinematics
-L1, L2, L3 ,L4= 70,150,180,60
+L1, L2, L3 = 0.2,0.5,0.5
 
-def inverse_kinematics(x, y, phi=0):
-    wx = x - L4 * math.cos(phi)
-    wy = y - L4 * math.sin(phi)
-    rw = math.hypot(wx, wy)
-    L23=L2+L3
-    if rw > (L1 + L2) or rw < abs(L1 - L2):
-        print("Target out of reach")
+def inverse_kinematics(x_target,y_target,z_target,angle=0):
+    theta1=math.atan2(x_target,y_target)
+    r=math.sqrt(x_target**2+y_target**2)
+    z_prime=z_target-L1
+    rw=math.hypot(r,z_prime)
+    if rw>(L2+L3) or rw<abs(L2-L3):
+        print(f"Target out of reach ")
         return False
-   
-    cos_theta2 = (rw**2 - L1**2 - L23**2) / (2 * L1 * L23)
-    cos_theta2 = max(-1, min(1, cos_theta2))  
-    theta2 = math.acos(cos_theta2)  
-    theta3 = 0
-    theta1 = math.atan2(wy, wx) - math.atan2(L2 * math.sin(theta2), L1 + L2 * math.cos(theta2))
-    theta4 = phi - (theta1 + theta2+theta3)
-    return math.degrees(theta1), math.degrees(theta2), math.degrees(theta3),math.degrees(theta4)
-def plot(angles):
+    cos_A3=(L2**2+L3**2-rw**2)/(2*L2*L3)
+    cos_A3=max(-1,min(1,cos_A3))
+    internal_angle_3=math.acos(cos_A3)
+    theta3=math.pi=internal_angle_3
+
+    sin_a2=(L3*math.sin(internal_angle_3))/rw
+    sin_a2=max(-1,min(1,sin_a2))
+    alpha=math.asin(sin_a2)
+    beta=math.atan2(z_prime,r)
+    theta2=beta+alpha
+    theta4=angle
+    return(theta1,theta2,theta3,theta4)
+'''def plot(angles):
     theta1,theta2,theta3=[math.radians(i) for i in angles]
     x0,y0=0,0
     x1,y1=L1*math.cos(theta1),L1*math.sin(theta1)
@@ -92,12 +96,29 @@ def automate(targets, steps=50):
 
     plt.ioff()
     plt.show()
-
+'''
 
 target = [(150, 150), (200, 100), (100, 200)]
 
 angle_list=[]
-automate(target,steps=30)
+#automate(target,steps=30)
+
+target_x, target_y, target_z = 0.0,0.5,0.7 # Target from sim.py
+angle = 0 # Radians
+
+result= inverse_kinematics(target_x, target_y, target_z, angle)
+
+if result is not False:
+    theta1,theta2,theta3,theta4=result
+    print(f"\n--- Analytical Solution ---")
+    print(f"Target (X, Y, Z): ({target_x}, {target_y}, {target_z})")
+    print(f"Theta 1 (Yaw):    {theta1:.3f} rad")
+    print(f"Theta 2 (Shoulder): {theta2:.3f} rad")
+    print(f"Theta 3 (Elbow):  {theta3:.3f} rad")
+    print(f"Theta 4 (Roll):   {theta4:.3f} rad")
+else:
+    print(f"\n--- Analytical Solution Failed ---")
+
 
 #This part is for manual checking of fk and ik functions
 '''for targets in target:

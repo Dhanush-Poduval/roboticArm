@@ -21,7 +21,7 @@ EE_LINK_INDEX = 3
 num_joints = p.getNumJoints(robot_arm)
 
 print(f"Robot Loaded with {num_joints} joints. End-Effector Index: {EE_LINK_INDEX}")
-target_pos = [0.0, 0.7, 1.0] 
+target_pos = [0.0, 0.5,0.7] 
 
 target_orientation = p.getQuaternionFromEuler([0, -math.pi / 4, 0]) 
 print("\nRunning Inverse Kinematics")
