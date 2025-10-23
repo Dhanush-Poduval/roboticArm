@@ -1,0 +1,175 @@
+<?xml version="1.0"?>
+<robot name="four_dof_arm">
+    <!-- 
+    ===================================================================
+    CONFIGURATION: 4 DOF Serial Manipulator (R-R-R-R)
+    - J1: Base Yaw (Z-axis)
+    - J2: Shoulder Pitch (Y-axis)
+    - J3: Elbow Pitch (Y-axis)
+    - J4: Wrist Roll (X-axis)
+    ===================================================================
+    -->
+
+    <!-- Global Parameters for visualization and dynamics -->
+    <material name="blue">
+        <color rgba="0.1 0.1 0.8 1.0"/>
+    </material>
+    <material name="red">
+        <color rgba="0.8 0.1 0.1 1.0"/>
+    </material>
+    <material name="grey">
+        <color rgba="0.7 0.7 0.7 1.0"/>
+    </material>
+    
+    <!-- Inertial property defaults for simple mass distribution -->
+    <macro name="default_inertial" params="mass">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <mass value="${mass}"/>
+            <inertia ixx="${(mass*0.01/12) + (mass*0.1*0.1/12)}" ixy="0.0" ixz="0.0"
+                     iyy="${(mass*0.1*0.1/12) + (mass*0.01/12)}" iyz="0.0"
+                     izz="${(mass*0.01/12) + (mass*0.01/12)}"/>
+        </inertial>
+    </macro>
+
+    <!-- 
+    base link
+    -->
+    <link name="base_link">
+        <visual>
+            <origin xyz="0 0 0.05" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.2 0.2 0.1"/>
+            </geometry>
+            <material name="grey"/>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0.05" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.2 0.2 0.1"/>
+            </geometry>
+        </collision>
+        <default_inertial mass="1.0"/>
+    </link>
+
+    <!-- 
+    joint 1 : yaw movement around z
+    -->
+    <joint name="joint1_base_yaw" type="revolute">
+        <origin xyz="0 0 0.1" rpy="0 0 0"/>
+        <parent link="base_link"/>
+        <child link="link1_shoulder"/>
+        <axis xyz="0 0 1"/>
+        <limit effort="100.0" velocity="0.5" lower="-3.14" upper="3.14"/>
+        <safety_controller soft_lower_limit="-3.1" soft_upper_limit="3.1" k_position="50" k_velocity="1"/>
+    </joint>
+
+    <!-- LINK 1: The short link connecting the base to the shoulder joint -->
+    <link name="link1_shoulder">
+        <visual>
+            <origin xyz="0 0 0.05" rpy="0 0 0"/>
+            <geometry>
+                <cylinder radius="0.04" length="0.1"/>
+            </geometry>
+            <material name="blue"/>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0.05" rpy="0 0 0"/>
+            <geometry>
+                <cylinder radius="0.04" length="0.1"/>
+            </geometry>
+        </collision>
+        <default_inertial mass="0.5"/>
+    </link>
+
+    <!-- 
+    JOINT 2: Shoulder Pitch (Revolute around Y)
+    -->
+    <joint name="joint2_shoulder_pitch" type="revolute">
+        <origin xyz="0 0 0.1" rpy="0 0 0"/>
+        <parent link="link1_shoulder"/>
+        <child link="link2_upper_arm"/>
+        <axis xyz="0 1 0"/>
+        <limit effort="100.0" velocity="0.5" lower="-1.57" upper="1.57"/>
+        <safety_controller soft_lower_limit="-1.5" soft_upper_limit="1.5" k_position="50" k_velocity="1"/>
+    </joint>
+
+    <!-- LINK 2: The upper arm link -->
+    <link name="link2_upper_arm">
+        <visual>
+            <origin xyz="0.25 0 0" rpy="0 1.5708 0"/> 
+            <geometry>
+                <cylinder radius="0.03" length="0.5"/>
+            </geometry>
+            <material name="red"/>
+        </visual>
+        <collision>
+            <origin xyz="0.25 0 0" rpy="0 1.5708 0"/>
+            <geometry>
+                <cylinder radius="0.03" length="0.5"/>
+            </geometry>
+        </collision>
+        <default_inertial mass="0.75"/>
+    </link>
+
+    <!-- 
+    joint 3 
+    -->
+    <joint name="joint3_elbow_pitch" type="revolute">
+        <origin xyz="0.5 0 0" rpy="0 0 0"/>
+        <parent link="link2_upper_arm"/>
+        <child link="link3_forearm"/>
+        <axis xyz="0 1 0"/> 
+        <limit effort="100.0" velocity="0.5" lower="-2.0" upper="2.0"/> 
+        <safety_controller soft_lower_limit="-1.9" soft_upper_limit="1.9" k_position="50" k_velocity="1"/>
+    </joint>
+
+    <!-- link 3-->
+    <link name="link3_forearm">
+        <visual>
+            <origin xyz="0.25 0 0" rpy="0 1.5708 0"/>
+            <geometry>
+                <cylinder radius="0.03" length="0.5"/>
+            </geometry>
+            <material name="blue"/>
+        </visual>
+        <collision>
+            <origin xyz="0.25 0 0" rpy="0 1.5708 0"/>
+            <geometry>
+                <cylinder radius="0.03" length="0.5"/>
+            </geometry>
+        </collision>
+        <default_inertial mass="0.5"/>
+    </link>
+
+    <!-- 
+    joint 4:wrist
+    -->
+    <joint name="joint4_wrist_roll" type="revolute">
+        <origin xyz="0.5 0 0" rpy="0 0 0"/>
+        <parent link="link3_forearm"/>
+        <child link="tool_link"/>
+        <axis xyz="1 0 0"/> 
+        <limit effort="50.0" velocity="1.0" lower="-3.14" upper="3.14"/> 
+        <safety_controller soft_lower_limit="-3.1" soft_upper_limit="3.1" k_position="50" k_velocity="1"/>
+    </joint>
+
+   
+    <link name="tool_link">
+        <visual>
+            <origin xyz="0.05 0 0" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.1 0.06 0.02"/>
+            </geometry>
+            <material name="red"/>
+        </visual>
+        <collision>
+            <origin xyz="0.05 0 0" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.1 0.06 0.02"/>
+            </geometry>
+        </collision>
+        <default_inertial mass="0.1"/>
+    </link>
+
+</robot>
