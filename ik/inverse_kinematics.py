@@ -6,7 +6,7 @@ from fk import forward_kinematics
 L1, L2, L3 = 0.2,0.5,0.5
 
 def inverse_kinematics(x_target,y_target,z_target,angle=0):
-    theta1=math.atan2(x_target,y_target)
+    theta1=math.atan2(y_target,x_target)
     r=math.sqrt(x_target**2+y_target**2)
     z_prime=z_target-L1
     rw=math.hypot(r,z_prime)
@@ -16,15 +16,15 @@ def inverse_kinematics(x_target,y_target,z_target,angle=0):
     cos_A3=(L2**2+L3**2-rw**2)/(2*L2*L3)
     cos_A3=max(-1,min(1,cos_A3))
     internal_angle_3=math.acos(cos_A3)
-    theta3=math.pi-internal_angle_3
+    theta3=-(math.pi-internal_angle_3)
 
     sin_a2=(L3*math.sin(internal_angle_3))/rw
     sin_a2=max(-1,min(1,sin_a2))
     alpha=math.asin(sin_a2)
     beta=math.atan2(z_prime,r)
-    theta2=beta+alpha
+    theta2=(beta+alpha)-(math.pi/2)
     theta4=angle
-    return (theta2,theta3,theta1,theta4)
+    return (theta1,theta2,theta3,theta4)
 '''def plot(angles):
     theta1,theta2,theta3=[math.radians(i) for i in angles]
     x0,y0=0,0
@@ -104,7 +104,7 @@ angle_list=[]
 
 #automate(target,steps=30)
 
-target_x, target_y, target_z = 0.0,0.2,0.5 # Target from sim.py
+target_x, target_y, target_z = 0.1,0.3,0.5 # Target from sim.py
 angle = 0 # Radians
 
 result= inverse_kinematics(target_x, target_y, target_z, angle)

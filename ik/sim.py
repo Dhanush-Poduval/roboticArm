@@ -76,7 +76,7 @@ def execute_pos(joint_target, robot_arm_id, duration_seconds=1.0, sim_time_per_s
         time.sleep(sim_time_per_step)
 
 print(f"Robot Loaded with {num_joints} joints. End-Effector Index: {EE_LINK_INDEX}")
-target_pos = [0.0, 0.2,0.5] 
+target_pos = [0.1, 0.3,0.5] 
 
 target_orientation = p.getQuaternionFromEuler([0, -math.pi / 4, 0]) 
 print("\nRunning Inverse Kinematics")
