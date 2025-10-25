@@ -1,6 +1,4 @@
-Logs RSSI and latency values to a local file for later review.
 
-python
 import os
 import time
 
