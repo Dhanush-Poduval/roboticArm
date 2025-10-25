@@ -30,10 +30,12 @@ shelf_half=np.array([0.8,0.4,0.02])
 shelf_pos=np.array([0.0, 0.6, 0.5])
 num_joints = p.getNumJoints(robot_arm)
 containers={}
+container_rack_half=np.array([0.6,0.2,0.005])
+container_rack_pos=np.array([0.0,0.7,container_rack_half[2]])
 rack_positions={
-    'C01': (0.4, 0.7, 0.1), 
-    'C02': (0.0, 0.7, 0.1),
-    'C03': (-0.4, 0.7, 0.1),
+    'C01': (0.4, 0.7, container_rack_half[2]*2), 
+    'C02': (0.0, 0.7, container_rack_half[2]*2),
+    'C03': (-0.4, 0.7, container_rack_half[2]*2),
 }
 shelf_positions={
     'Aruco_101': (-0.8, 0.0, 0.3),
@@ -103,9 +105,11 @@ def execute_pos(joint_target, robot_arm_id, duration_seconds=1.0, sim_time_per_s
          )
         p.stepSimulation()
         time.sleep(sim_time_per_step)
-main_shelf_id=load_shelf(shelf_pos,shelf_half)
+'''main_shelf_id=load_shelf(shelf_pos,shelf_half)
+container_rack=load_shelf(container_rack_pos,container_rack_half)
 for name,pos in rack_positions.items():
    containers[name]=load_container(name,pos)
+'''
 print(f"Robot Loaded with {num_joints} joints. End-Effector Index: {EE_LINK_INDEX}")
 target_pos = [0.1, 0.3,0.5] 
 
