@@ -103,7 +103,9 @@ def execute_pos(joint_target, robot_arm_id, duration_seconds=1.0, sim_time_per_s
          )
         p.stepSimulation()
         time.sleep(sim_time_per_step)
-
+main_shelf_id=load_shelf(shelf_pos,shelf_half)
+for name,pos in rack_positions.items():
+   containers[name]=load_container(name,pos)
 print(f"Robot Loaded with {num_joints} joints. End-Effector Index: {EE_LINK_INDEX}")
 target_pos = [0.1, 0.3,0.5] 
 
@@ -140,6 +142,7 @@ for i in range(num_joints):
         )
 
 '''
+
 print(f"Target Position: {target_pos}")
 print(f"Calculated Joint Poses (rad): {[round(angle, 3) for angle in joint_poses]}")
 print("Starting Simulation to move the arm")
