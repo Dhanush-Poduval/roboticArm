@@ -19,13 +19,10 @@ p.setAdditionalSearchPath(pybullet_data.getDataPath()) #
 p.setGravity(0, 0, -9.81)
 p.loadURDF("plane.urdf") 
 robot_arm = p.loadURDF(urdf_path, useFixedBase=True, basePosition=[0,0,0])
-# Insert this right after loading the URDF:
-print("\n--- PyBullet Joint Info ---")
+print("\nPyBullet Joint Info")
 for i in range(p.getNumJoints(robot_arm)):
     joint_info = p.getJointInfo(robot_arm, i)
-    # joint_info[1] is the joint name (bytes), joint_info[2] is the joint type
     print(f"Index {i}: Name '{joint_info[1].decode('utf-8')}', Type: {joint_info[2]}")
-print("---------------------------\n")
 EE_LINK_INDEX = 3 
 LINK_RADIUS=0.05
 shelf_safety_margin=0.1
@@ -47,6 +44,38 @@ classification_results={
     'C02': 'Aruco_101', 
     'C03': 'Aruco_102',
 }
+LIFT_HEIGHT_Z=0.35
+def load_shelf(position,half_extents):
+    visual_shape = p.createVisualShape(p.GEOM_BOX, halfExtents=half_extents, rgbaColor=[0.5, 0.5, 0.5, 1])
+    collision_shape = p.createCollisionShape(p.GEOM_BOX, halfExtents=half_extents)
+    shelf_id = p.createMultiBody(
+        baseMass=0,
+        baseCollisionShapeIndex=collision_shape,
+        baseVisualShapeIndex=visual_shape,
+        basePosition=position,
+        baseOrientation=p.getQuaternionFromEuler([0, 0, 0])
+    )
+    print(f"Loaded shelf at location ${position}")
+    return shelf_id
+
+def load_container(name,position):
+    container_half_extents = [0.05, 0.05, 0.05]
+    color = [np.random.rand(), np.random.rand(), np.random.rand(), 1]
+    visual_shape = p.createVisualShape(p.GEOM_BOX, halfExtents=container_half_extents, rgbaColor=color)
+    collision_shape = p.createCollisionShape(p.GEOM_BOX, halfExtents=container_half_extents)
+    
+    
+    base_z = position[2] + container_half_extents[2] 
+    
+    container_id = p.createMultiBody(
+        baseMass=0.1, 
+        baseCollisionShapeIndex=collision_shape,
+        baseVisualShapeIndex=visual_shape,
+        basePosition=[position[0], position[1], base_z],
+        baseOrientation=p.getQuaternionFromEuler([0, 0, 0])
+    )
+    print(f"Loaded Container {name} at: {[position[0], position[1], base_z]}")
+    return container_id
 
 def collision(robot_arm,joint_indices,joint_positions):
     p.resetJointStatesMultiDof(robot_arm,joint_indices,joint_positions)
@@ -80,7 +109,7 @@ target_pos = [0.1, 0.3,0.5]
 
 target_orientation = p.getQuaternionFromEuler([0, -math.pi / 4, 0]) 
 print("\nRunning Inverse Kinematics")
-'''
+
 joint_poses=inverse_kinematics(*target_pos,angle=0)
 if joint_poses is not False:
     final_poses = np.array(joint_poses)
@@ -110,7 +139,7 @@ for i in range(num_joints):
             targetPosition=joint_poses[i]
         )
 
-''''''
+'''
 print(f"Target Position: {target_pos}")
 print(f"Calculated Joint Poses (rad): {[round(angle, 3) for angle in joint_poses]}")
 print("Starting Simulation to move the arm")
