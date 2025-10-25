@@ -51,6 +51,7 @@ def inverse_kinematics(x_target,y_target,z_target,angle=0):
         print("Target is making joints move outside the limit ")
         return False
     return valid_solutions   
+#this was for plotting in 2D x,y plane and automate it 
 '''def plot(angles):
     theta1,theta2,theta3=[math.radians(i) for i in angles]
     x0,y0=0,0
@@ -123,7 +124,7 @@ def automate(targets, steps=50):
     plt.ioff()
     plt.show()
 '''
-
+#this is to check the angles i get in my ik function
 '''target = [(150, 150), (200, 100), (100, 200)]
 
 angle_list=[]

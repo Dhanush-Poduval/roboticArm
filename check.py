@@ -3,14 +3,33 @@ import cv2
 import math
 model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
 cap = cv2.VideoCapture(0)
+
+aruco_dict=cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
+aruco_params=cv2.aruco.DetectorParameters()
 unique_centers = [] 
 tolerance = 10 
 max_containers = 5 
+detected_aruco_positions={}
 
 while True:
     ret, frame = cap.read()
     if not ret:
         break
+    corners , ids,rejected=cv2.aruco.detectMarkers(frame,aruco_dict,parameters=aruco_params)
+    if ids is not None:
+        cv2.aruco.drawDetectedMarkers(frame,corners,ids)
+    for i in range(len(ids)):
+        marker_id=ids[i][0]
+        c=corners[i][0]
+
+        marker_cx=int((c[0][0]+c[2][0])/2)
+        marker_cy=int((c[0][1]+c[2][1])/2)
+        detected_aruco_positions[marker_id]=(marker_cx,marker_cy)
+        cv2.circle(frame,(marker_cx,marker_cy),5,(255,0,0),-1)
+        cv2.putText(frame, f"Aruco ID: {marker_id}", (marker_cx + 10, marker_cy - 10), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+
+
 
     results = model(frame)
     
@@ -34,9 +53,17 @@ while True:
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
+
+
 cap.release()
 cv2.destroyAllWindows()
 
 print("Unique container centers:")
 for i, (cx, cy) in enumerate(unique_centers, 1):
     print(f"Container {i}: ({cx}, {cy})")
+print('AruCo markers centers :')
+if detected_aruco_positions:
+    for marker_id , pos in detected_aruco_positions.items():
+        print(f"Marker ID {marker_id}:({pos[0]},{pos[1]})")
+else:
+    print("No detected arUco markers")
