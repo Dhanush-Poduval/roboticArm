@@ -21,7 +21,7 @@ def send_data():
     while True:
         data = json.dumps(get_sensor_data())
         sock.sendto(data.encode(), (SERVER_IP, SERVER_PORT))
-        print("📡 Data sent:", data)
+        print(" Data sent:", data)
         time.sleep(2)
 
 if __name__ == "__main__":
