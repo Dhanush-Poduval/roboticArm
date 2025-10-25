@@ -122,30 +122,27 @@ print(f'moving to clearence pos ${clearance_pos}')
 
 joint_poses_clearence=inverse_kinematics(*clearance_pos,angle=0)
 if joint_poses_clearence is not False:
-    
-    # 2. Select the "best" pose (smallest absolute shoulder angle, pose[1])
     best_pose = None
     min_abs_theta2 = float('inf')
 
     for pose in joint_poses_clearence:
-        # pose[1] is theta2
         if abs(pose[1]) < min_abs_theta2:
             min_abs_theta2 = abs(pose[1])
             best_pose = pose
             
-    # 3. Execute with the selected 1D pose
+   
     if best_pose is not None:
-        final_poses = np.array(best_pose) # Convert the selected 1D pose
+        final_poses = np.array(best_pose) 
         print(f"Calculated Clearance Poses (rad): {[round(angle, 3) for angle in final_poses]}")
         execute_pos(final_poses, robot_arm, duration_seconds=2.0)
     else:
-        # This branch should rarely be reached if IK is successful
-        print("Mission fails: Pose selection for clearance failed.")
+       
+        print("Not succesfull")
         p.disconnect()
         exit()
         
 else:
-    print("Mission fails: Clearance target out of reach.")
+    print("Clearance is out of reach ")
     p.disconnect()
     exit()
 
