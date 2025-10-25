@@ -1,0 +1,7 @@
+__pycache__/
+*.csv
+*.json
+*.log
+*.tmp
+.DS_Store
+
