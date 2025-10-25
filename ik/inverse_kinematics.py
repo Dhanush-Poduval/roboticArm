@@ -16,15 +16,22 @@ def inverse_kinematics(x_target,y_target,z_target,angle=0):
     cos_A3=(L2**2+L3**2-rw**2)/(2*L2*L3)
     cos_A3=max(-1,min(1,cos_A3))
     internal_angle_3=math.acos(cos_A3)
-    theta3=-(math.pi-internal_angle_3)
-
+    beta=math.atan2(z_prime,r)
     sin_a2=(L3*math.sin(internal_angle_3))/rw
     sin_a2=max(-1,min(1,sin_a2))
     alpha=math.asin(sin_a2)
-    beta=math.atan2(z_prime,r)
-    theta2=(beta+alpha)-(math.pi/2)
     theta4=angle
-    return (theta1,theta2,theta3,theta4)
+    theta3_up=-(math.pi-internal_angle_3)
+    theta2_up=beta-alpha
+
+    up_type=[theta1,theta2_up,theta3_up,angle]
+
+    theta3_down=math.pi-internal_angle_3
+    theta2_down=beta+alpha
+
+    down_type=[theta1,theta2_down,theta3_down,theta4]
+    
+    return [up_type,down_type]
 '''def plot(angles):
     theta1,theta2,theta3=[math.radians(i) for i in angles]
     x0,y0=0,0
@@ -98,7 +105,7 @@ def automate(targets, steps=50):
     plt.show()
 '''
 
-target = [(150, 150), (200, 100), (100, 200)]
+'''target = [(150, 150), (200, 100), (100, 200)]
 
 angle_list=[]
 
@@ -120,7 +127,7 @@ if result is not False:
 else:
     print(f"\n--- Analytical Solution Failed ---")
 
-
+'''
 #This part is for manual checking of fk and ik functions
 '''for targets in target:
     angles=inverse_kinematics(*targets)

@@ -27,7 +27,7 @@ EE_LINK_INDEX = 3
 LINK_RADIUS=0.05
 shelf_safety_margin=0.1
 shelf_half=np.array([0.8,0.4,0.02])
-shelf_pos=np.array([0.0, 0.6, 0.5])
+shelf_pos=np.array([0.0, 1.01, 0.37])
 num_joints = p.getNumJoints(robot_arm)
 containers={}
 #container_rack_half=np.array([0.6,0.2,0.005])
@@ -36,12 +36,6 @@ shelf_top_z=shelf_pos[2]+shelf_half[2]
 container_base_z=shelf_top_z
 
 rack_positions={
-    'C01': (0.4, 0.4, container_base_z), 
-    'C02': (0.0, 0.4, container_base_z),
-    'C03': (-0.4, 0.4, container_base_z),
-    'C04': (-0.4, 0.6, container_base_z),
-    'C05': (0.0, 0.6, container_base_z),
-    'C06': (0.4, 0.6, container_base_z),
     'C07': (-0.4, 0.9, container_base_z), 
     'C08': (0.0, 0.9, container_base_z),
     'C09': (0.4, 0.9, container_base_z),
@@ -58,7 +52,7 @@ classification_results={
 }
 LIFT_HEIGHT_Z=0.35
 def load_shelf(position,half_extents):
-    visual_shape = p.createVisualShape(p.GEOM_BOX, halfExtents=half_extents, rgbaColor=[0.5, 0.5, 0.5, 1])
+    visual_shape = p.createVisualShape(p.GEOM_BOX, halfExtents=half_extents, rgbaColor=[2, 0.5, 0.5, 1])
     collision_shape = p.createCollisionShape(p.GEOM_BOX, halfExtents=half_extents)
     shelf_id = p.createMultiBody(
         baseMass=0,
@@ -120,17 +114,38 @@ for name,pos in rack_positions.items():
    containers[name]=load_container(name,pos)
 
 print(f"Robot Loaded with {num_joints} joints. End-Effector Index: {EE_LINK_INDEX}")
-target_pos = [0.0,0.4,1.0] 
+target_pos = [0.4,0.89,0.39] 
 
-clearance_pos=[0.1,0.3,0.9]
+clearance_pos=[0.0, 0.7,0.7]
 
 print(f'moving to clearence pos ${clearance_pos}')
 
 joint_poses_clearence=inverse_kinematics(*clearance_pos,angle=0)
 if joint_poses_clearence is not False:
-    execute_pos(np.array(joint_poses_clearence),robot_arm,duration_seconds=2.0)
+    
+    # 2. Select the "best" pose (smallest absolute shoulder angle, pose[1])
+    best_pose = None
+    min_abs_theta2 = float('inf')
+
+    for pose in joint_poses_clearence:
+        # pose[1] is theta2
+        if abs(pose[1]) < min_abs_theta2:
+            min_abs_theta2 = abs(pose[1])
+            best_pose = pose
+            
+    # 3. Execute with the selected 1D pose
+    if best_pose is not None:
+        final_poses = np.array(best_pose) # Convert the selected 1D pose
+        print(f"Calculated Clearance Poses (rad): {[round(angle, 3) for angle in final_poses]}")
+        execute_pos(final_poses, robot_arm, duration_seconds=2.0)
+    else:
+        # This branch should rarely be reached if IK is successful
+        print("Mission fails: Pose selection for clearance failed.")
+        p.disconnect()
+        exit()
+        
 else:
-    print("Mission failes")
+    print("Mission fails: Clearance target out of reach.")
     p.disconnect()
     exit()
 
@@ -138,15 +153,30 @@ print(f"moving to final target position:{target_pos}")
 joint_poses_final=inverse_kinematics(*target_pos,angle=0)
 
 if joint_poses_final is not False:
-      final_poses = np.array(joint_poses_final)
-      print(f"Calculated Joint Poses (rad): {[round(angle, 3) for angle in final_poses]}")
+      best_pose=None
+      min_abs_theta2=float('inf')
+      for pose in joint_poses_final:
+            if abs(pose[1])<min_abs_theta2:
+                min_abs_theta2=abs(pose[1])
+                best_pose=pose
+      if best_pose is None:
+          final_poses = np.array(joint_poses_final)
+          print(f"Calculated Joint Poses (rad): {[round(angle, 3) for angle in final_poses]}")
 
-    # 2. Execute Movement (Moves directly to the target pose)
-      print("Executing direct movement to IK target...")
-      execute_pos(final_poses, robot_arm, duration_seconds=2.0)
+   
+          print("Executing direct movement to IK target")
+          execute_pos(final_poses, robot_arm, duration_seconds=2.0)
+      else:
+          print("Could not get valid pose ")
+          
 else:
-      print("Mission failed: Analytical IK could not reach the target.")
-    
+   print("Target out of reach ")
+         
+
+          
+
+      
+ 
 
 #target_orientation = p.getQuaternionFromEuler([0, -math.pi / 4, 0]) 
 print("\nRunning Inverse Kinematics")
