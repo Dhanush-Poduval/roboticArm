@@ -4,6 +4,16 @@ import numpy as np
 import time
 from fk import forward_kinematics
 L1, L2, L3 = 0.2,0.5,0.5
+J2_LOWER = -1.57 
+J2_UPPER = 1.57
+J3_LOWER = -2.0
+J3_UPPER = 2.0
+def is_valid(theta2,theta3):
+    if not (J2_LOWER<=theta2<=J2_UPPER):
+        return False
+    if not (J3_LOWER <= theta3 <= J3_UPPER):
+        return False
+    return True
 
 def inverse_kinematics(x_target,y_target,z_target,angle=0):
     theta1=math.atan2(y_target,x_target)
@@ -30,8 +40,17 @@ def inverse_kinematics(x_target,y_target,z_target,angle=0):
     theta2_down=beta+alpha
 
     down_type=[theta1,theta2_down,theta3_down,theta4]
-    
-    return [up_type,down_type]
+
+    valid_solutions=[]
+
+    if is_valid(theta2_up,theta3_up):
+        valid_solutions.append(up_type)
+    if is_valid(theta2_down,theta3_down):
+        valid_solutions.append(down_type)
+    if not valid_solutions:
+        print("Target is making joints move outside the limit ")
+        return False
+    return valid_solutions   
 '''def plot(angles):
     theta1,theta2,theta3=[math.radians(i) for i in angles]
     x0,y0=0,0

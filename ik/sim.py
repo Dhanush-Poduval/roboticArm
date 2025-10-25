@@ -147,27 +147,33 @@ else:
     exit()
 
 print(f"moving to final target position:{target_pos}")
+current_joint_state=p.getJointStates(robot_arm,range(4))
+current_joint_angles=[state[0] for state in current_joint_state]
+current_joint_angles_np=np.array(current_joint_angles)
 joint_poses_final=inverse_kinematics(*target_pos,angle=0)
-
+final_target_poses=None
 if joint_poses_final is not False:
-      best_pose=None
-      min_abs_theta2=float('inf')
-      for pose in joint_poses_final:
-            if abs(pose[1])<min_abs_theta2:
-                min_abs_theta2=abs(pose[1])
-                best_pose=pose
-      if best_pose is None:
-          final_poses = np.array(joint_poses_final)
-          print(f"Calculated Joint Poses (rad): {[round(angle, 3) for angle in final_poses]}")
+      best_pose_final = None
+      min_dist = float('inf') 
 
-   
-          print("Executing direct movement to IK target")
-          execute_pos(final_poses, robot_arm, duration_seconds=2.0)
+      for i, pose in enumerate(joint_poses_final):
+            formatted_angles = [round(angle, 3) for angle in pose]
+            print(f"  Solution {i+1}: {formatted_angles}")
+            pose_array = np.array(pose)
+            distance = np.sum((pose_array - current_joint_angles_np)**2)
+
+            if distance < min_dist:
+                min_dist = distance
+                best_pose_final = pose 
+      if best_pose_final is not None:
+          final_target_poses = np.array(best_pose_final)
+          print(f"Chosen Final Poses (rad): {[round(angle, 3) for angle in final_target_poses]}")
+          
       else:
-          print("Could not get valid pose ")
+          print("Could not get a valid pose after filtering.")
           
 else:
-   print("Target out of reach ")
+   print("Target out of reach or no solution within limits.")
          
 
           
@@ -210,12 +216,16 @@ for i in range(num_joints):
 
 '''
 
-print(f"Target Position: {target_pos}")
-print(f"Calculated Joint Poses (rad): {[round(angle, 3) for angle in joint_poses_final]}")
-print("Starting Simulation to move the arm")
-sim_time_seconds = 5
-for i in range(sim_time_seconds * 240):
-    p.stepSimulation()
-    time.sleep(1. / 240.) 
+if final_target_poses is not None:
+    print("\nExecuting movement to selected IK target")
+    execute_pos(final_target_poses, robot_arm, duration_seconds=3.0) 
+    print("\nMovement Complete. Running final simulation loop.")
+    for i in range(1 * 240): 
+        p.stepSimulation()
+        time.sleep(1. / 240.) 
+    
+else:
+    print("\nMission Aborted: No valid final target pose available.")
+
 p.disconnect()
 print("\nSimulation Finished. Arm should be at the target.")
