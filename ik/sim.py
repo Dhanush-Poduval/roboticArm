@@ -15,8 +15,8 @@ if not os.path.exists(urdf_path):
     print("Not found")
     exit()
 physicsClient = p.connect(p.GUI) 
-p.setAdditionalSearchPath(pybullet_data.getDataPath()) # 
-p.setGravity(0, 0, -9.81)
+p.setAdditionalSearchPath(pybullet_data.getDataPath()) 
+p.setGravity(0, 0, 0)
 p.loadURDF("plane.urdf") 
 robot_arm = p.loadURDF(urdf_path, useFixedBase=True, basePosition=[0,0,0])
 print("\nPyBullet Joint Info")
@@ -25,13 +25,13 @@ for i in range(p.getNumJoints(robot_arm)):
     print(f"Index {i}: Name '{joint_info[1].decode('utf-8')}', Type: {joint_info[2]}")
 EE_LINK_INDEX = 3 
 LINK_RADIUS=0.05
+L0_BASE_HEIGHT = 0.1
 shelf_safety_margin=0.1
 shelf_half=np.array([0.8,0.4,0.02])
-shelf_pos=np.array([0.0, 1.01, 0.37])
+shelf_pos=np.array([0.0, 1.1, 0.37])
 num_joints = p.getNumJoints(robot_arm)
 containers={}
-#container_rack_half=np.array([0.6,0.2,0.005])
-#container_rack_pos=np.array([0.0,0.7,container_rack_half[2]])
+
 shelf_top_z=shelf_pos[2]+shelf_half[2]
 container_base_z=shelf_top_z
 
@@ -51,6 +51,9 @@ classification_results={
     'C03': 'Aruco_102',
 }
 LIFT_HEIGHT_Z=0.35
+JOINT_INDICES = list(range(4))
+
+'''
 def load_shelf(position,half_extents):
     visual_shape = p.createVisualShape(p.GEOM_BOX, halfExtents=half_extents, rgbaColor=[2, 0.5, 0.5, 1])
     collision_shape = p.createCollisionShape(p.GEOM_BOX, halfExtents=half_extents)
@@ -63,6 +66,7 @@ def load_shelf(position,half_extents):
     )
     print(f"Loaded shelf at location ${position}")
     return shelf_id
+'''
 
 def load_container(name,position):
     container_half_extents = [0.05, 0.05, 0.05]
@@ -82,21 +86,6 @@ def load_container(name,position):
     )
     print(f"Loaded Container {name} at: {[position[0], position[1], base_z]}")
     return container_id
-
-def collision(robot_arm,joint_indices,joint_positions):
-    p.resetJointStatesMultiDof(robot_arm,joint_indices,joint_positions)
-    safeDistance=(shelf_half[1] + LINK_RADIUS + shelf_safety_margin)**2
-    link2_state=p.getLinkState(robot_arm,1)
-    link2_pos=np.array(link2_state[0])
-    link3_state=p.getLinkState(robot_arm,2)
-    link3_pos=np.array(link3_state[0])
-    check_links=[link2_pos,link3_pos]
-    for link_pos in check_links:
-        dist=np.sum((link_pos - shelf_pos)**2)
-        if dist<safeDistance:
-            return True
-    return False
-
 def execute_pos(joint_target, robot_arm_id, duration_seconds=1.0, sim_time_per_step=1.0 / 240.0):
     num_steps = int(duration_seconds / sim_time_per_step)
     for i in range(num_steps):
@@ -109,14 +98,34 @@ def execute_pos(joint_target, robot_arm_id, duration_seconds=1.0, sim_time_per_s
          )
         p.stepSimulation()
         time.sleep(sim_time_per_step)
-main_shelf_id=load_shelf(shelf_pos,shelf_half)
+#main_shelf_id=load_shelf(shelf_pos,shelf_half)
 for name,pos in rack_positions.items():
    containers[name]=load_container(name,pos)
 
 print(f"Robot Loaded with {num_joints} joints. End-Effector Index: {EE_LINK_INDEX}")
-target_pos = [0.4,0.89,0.39] 
 
-clearance_pos=[0.0, 0.7,0.7]
+
+target_pos_tip = [-0.4,0.85,0.39] 
+length_EE=0.05
+target_pos_ik = [target_pos_tip[0], target_pos_tip[1], target_pos_tip[2] -length_EE-L0_BASE_HEIGHT]
+
+TARGET_MARKER_RADIUS = 0.02
+target_marker_visual = p.createVisualShape(
+    p.GEOM_SPHERE, 
+    radius=TARGET_MARKER_RADIUS, 
+    rgbaColor=[1, 0, 0, 1]  
+)
+target_marker_id = p.createMultiBody(
+    baseMass=0,  
+    baseCollisionShapeIndex=-1, 
+    baseVisualShapeIndex=target_marker_visual,
+    basePosition=target_pos_tip
+)
+
+clearance_pos=[0.0, 0.2,0.7]
+APPROACH_HEIGHT_OFFSET = 0.1
+approach_pos_tip = [target_pos_tip[0], target_pos_tip[1], target_pos_tip[2] + APPROACH_HEIGHT_OFFSET]
+approach_pos_ik = [approach_pos_tip[0], approach_pos_tip[1], approach_pos_tip[2] -length_EE-L0_BASE_HEIGHT]
 
 print(f'moving to clearence pos ${clearance_pos}')
 
@@ -130,7 +139,6 @@ if joint_poses_clearence is not False:
             min_abs_theta2 = abs(pose[1])
             best_pose = pose
             
-   
     if best_pose is not None:
         final_poses = np.array(best_pose) 
         print(f"Calculated Clearance Poses (rad): {[round(angle, 3) for angle in final_poses]}")
@@ -145,18 +153,19 @@ else:
     print("Clearance is out of reach ")
     p.disconnect()
     exit()
-
-print(f"moving to final target position:{target_pos}")
 current_joint_state=p.getJointStates(robot_arm,range(4))
 current_joint_angles=[state[0] for state in current_joint_state]
 current_joint_angles_np=np.array(current_joint_angles)
-joint_poses_final=inverse_kinematics(*target_pos,angle=0)
-final_target_poses=None
-if joint_poses_final is not False:
-      best_pose_final = None
+
+print(f"moving to final target position:{approach_pos_tip}")
+joint_poses_approach=inverse_kinematics(*approach_pos_ik,angle=0)
+final_approach_poses=None
+
+if joint_poses_approach is not False:
+      best_pose_approach = None
       min_dist = float('inf') 
 
-      for i, pose in enumerate(joint_poses_final):
+      for i, pose in enumerate(joint_poses_approach): 
             formatted_angles = [round(angle, 3) for angle in pose]
             print(f"  Solution {i+1}: {formatted_angles}")
             pose_array = np.array(pose)
@@ -164,24 +173,60 @@ if joint_poses_final is not False:
 
             if distance < min_dist:
                 min_dist = distance
-                best_pose_final = pose 
-      if best_pose_final is not None:
-          final_target_poses = np.array(best_pose_final)
-          print(f"Chosen Final Poses (rad): {[round(angle, 3) for angle in final_target_poses]}")
-          
+                best_pose_approach = pose 
+      
+      if best_pose_approach is not None:
+          final_approach_poses = np.array(best_pose_approach)
+          print(f"Chosen Final Poses (rad): {[round(angle, 3) for angle in final_approach_poses]}")
       else:
           print("Could not get a valid pose after filtering.")
           
 else:
    print("Target out of reach or no solution within limits.")
+
+if final_approach_poses is not None:
+    current_joint_angles_np = final_approach_poses
+    
+    print(f"moving to final target position:{target_pos_tip}")
+    
+    joint_poses_final=inverse_kinematics(*target_pos_ik,angle=0)
+    final_target_poses=None
+    
+    if joint_poses_final is not False:
+          best_pose_final = None
+          min_dist = float('inf') 
+
+          for i, pose in enumerate(joint_poses_final):
+
+                formatted_angles = [round(angle, 3) for angle in pose]
+                print(f"  Solution {i+1}: {formatted_angles}")
+                pose_array = np.array(pose)
+                distance = np.sum((pose_array - current_joint_angles_np)**2)
+
+                if distance < min_dist:
+                    min_dist = distance
+                    best_pose_final = pose 
+          if best_pose_final is not None:
+              theta2_final = best_pose_final[1]
+              theta3_final = best_pose_final[2]
+              theta4_required = -1 * (theta2_final + theta3_final)
+              
+              corrected_pose = list(best_pose_final)
+              corrected_pose[3] = theta4_required 
+              
+              final_target_poses = np.array(corrected_pose)
+              print(f"Chosen Final Poses (rad): {[round(angle, 3) for angle in final_target_poses]}")
+              
+          else:
+              print("Could not get a valid pose after filtering.")
+              
+    else:
+       print("Target out of reach or no solution within limits.")
          
+else:
+   final_target_poses = None
 
-          
 
-      
- 
-
-#target_orientation = p.getQuaternionFromEuler([0, -math.pi / 4, 0]) 
 print("\nRunning Inverse Kinematics")
 
 '''joint_poses=inverse_kinematics(*target_pos,angle=0)
@@ -218,7 +263,8 @@ for i in range(num_joints):
 
 if final_target_poses is not None:
     print("\nExecuting movement to selected IK target")
-    execute_pos(final_target_poses, robot_arm, duration_seconds=3.0) 
+    # This is the single, final execution
+    execute_pos(final_target_poses, robot_arm, duration_seconds=1.0) 
     print("\nMovement Complete. Running final simulation loop.")
     for i in range(1 * 240): 
         p.stepSimulation()

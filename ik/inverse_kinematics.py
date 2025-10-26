@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import time
 from fk import forward_kinematics
-L1, L2, L3 = 0.2,0.5,0.5
+L1, L2, L3 = 0.1,0.5,0.5
 J2_LOWER = -1.57 
 J2_UPPER = 1.57
 J3_LOWER = -2.0
@@ -18,7 +18,7 @@ def is_valid(theta2,theta3):
 def inverse_kinematics(x_target,y_target,z_target,angle=0):
     theta1=math.atan2(y_target,x_target)
     r=math.sqrt(x_target**2+y_target**2)
-    z_prime=z_target-L1
+    z_prime=z_target
     rw=math.hypot(r,z_prime)
     if rw>(L2+L3) or rw<abs(L2-L3):
         print(f"Target out of reach ")
@@ -39,7 +39,7 @@ def inverse_kinematics(x_target,y_target,z_target,angle=0):
     theta3_down=math.pi-internal_angle_3
     theta2_down=beta+alpha
 
-    down_type=[theta1,theta2_down,theta3_down,theta4]
+    down_type=[theta1,theta2_down,theta3_down,angle]
 
     valid_solutions=[]
 
