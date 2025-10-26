@@ -9,7 +9,6 @@ from inverse_kinematics import inverse_kinematics
 script_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(script_dir)
 urdf_path = os.path.join(parent_dir, 'four_dof_arm.urdf')
-#debug for not loading urdf
 print(f"Final URDF Path: {urdf_path}") 
 if not os.path.exists(urdf_path):
     print("Not found")
@@ -122,49 +121,48 @@ target_marker_id = p.createMultiBody(
     basePosition=target_pos_tip
 )
 
-clearance_pos=[0.0, 0.2,0.7]
+clearance_pos=[0.0, 0.2,0.6]
 APPROACH_HEIGHT_OFFSET = 0.1
-approach_pos_tip = [target_pos_tip[0], target_pos_tip[1], target_pos_tip[2] + APPROACH_HEIGHT_OFFSET]
+approach_pos_tip = [target_pos_tip[0], target_pos_tip[1], target_pos_tip[2] -APPROACH_HEIGHT_OFFSET]
 approach_pos_ik = [approach_pos_tip[0], approach_pos_tip[1], approach_pos_tip[2] -length_EE-L0_BASE_HEIGHT]
+
 
 print(f'moving to clearence pos ${clearance_pos}')
 
 joint_poses_clearence=inverse_kinematics(*clearance_pos,angle=0)
 if joint_poses_clearence is not False:
+    initial_joint_angles = np.array([p.getJointState(robot_arm, i)[0] for i in range(4)])
+    
     best_pose = None
-    min_abs_theta2 = float('inf')
-
+    min_dist = float('inf')
     for pose in joint_poses_clearence:
-        if abs(pose[1]) < min_abs_theta2:
-            min_abs_theta2 = abs(pose[1])
+        pose_array = np.array(pose)
+        distance = np.sum((pose_array - initial_joint_angles)**2)
+        if distance < min_dist:
+            min_dist = distance
             best_pose = pose
             
     if best_pose is not None:
-        final_poses = np.array(best_pose) 
-        print(f"Calculated Clearance Poses (rad): {[round(angle, 3) for angle in final_poses]}")
-        execute_pos(final_poses, robot_arm, duration_seconds=2.0)
+        final_poses_clearance = np.array(best_pose) 
+        print(f"Calculated Clearance Poses (rad): {[round(angle, 3) for angle in final_poses_clearance]}")
+        execute_pos(final_poses_clearance, robot_arm, duration_seconds=2.0)
     else:
-       
         print("Not succesfull")
         p.disconnect()
         exit()
-        
 else:
     print("Clearance is out of reach ")
     p.disconnect()
     exit()
-current_joint_state=p.getJointStates(robot_arm,range(4))
-current_joint_angles=[state[0] for state in current_joint_state]
-current_joint_angles_np=np.array(current_joint_angles)
 
-print(f"moving to final target position:{approach_pos_tip}")
+current_joint_angles_np = np.array([p.getJointState(robot_arm, i)[0] for i in range(4)])
+print(f"moving to approach position:{approach_pos_tip}")
 joint_poses_approach=inverse_kinematics(*approach_pos_ik,angle=0)
 final_approach_poses=None
 
 if joint_poses_approach is not False:
       best_pose_approach = None
       min_dist = float('inf') 
-
       for i, pose in enumerate(joint_poses_approach): 
             formatted_angles = [round(angle, 3) for angle in pose]
             print(f"  Solution {i+1}: {formatted_angles}")
@@ -177,13 +175,13 @@ if joint_poses_approach is not False:
       
       if best_pose_approach is not None:
           final_approach_poses = np.array(best_pose_approach)
-          print(f"Chosen Final Poses (rad): {[round(angle, 3) for angle in final_approach_poses]}")
+          print(f"Chosen Approach Poses (rad): {[round(angle, 3) for angle in final_approach_poses]}")
+          execute_pos(final_approach_poses, robot_arm, duration_seconds=1.0) 
       else:
           print("Could not get a valid pose after filtering.")
           
 else:
-   print("Target out of reach or no solution within limits.")
-
+   print("Target out of reach ")
 if final_approach_poses is not None:
     current_joint_angles_np = final_approach_poses
     
@@ -195,7 +193,6 @@ if final_approach_poses is not None:
     if joint_poses_final is not False:
           best_pose_final = None
           min_dist = float('inf') 
-
           for i, pose in enumerate(joint_poses_final):
 
                 formatted_angles = [round(angle, 3) for angle in pose]
@@ -221,7 +218,7 @@ if final_approach_poses is not None:
               print("Could not get a valid pose after filtering.")
               
     else:
-       print("Target out of reach or no solution within limits.")
+       print("Target out of reach ")
          
 else:
    final_target_poses = None
@@ -263,7 +260,6 @@ for i in range(num_joints):
 
 if final_target_poses is not None:
     print("\nExecuting movement to selected IK target")
-    # This is the single, final execution
     execute_pos(final_target_poses, robot_arm, duration_seconds=1.0) 
     print("\nMovement Complete. Running final simulation loop.")
     for i in range(1 * 240): 
