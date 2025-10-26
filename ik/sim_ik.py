@@ -125,6 +125,8 @@ target_marker_id = p.createMultiBody(
 clearance_pos_tip = [0.0, 0.4, 0.7] 
 clearance_pos_ik = [clearance_pos_tip[0], clearance_pos_tip[1], clearance_pos_tip[2] + length_EE]
 
+
+
 print(f'\nmoving to clearence pos: {clearance_pos_tip}')
 
 joint_poses_clearence_raw = p.calculateInverseKinematics(
@@ -133,91 +135,100 @@ joint_poses_clearence_raw = p.calculateInverseKinematics(
     targetPosition=clearance_pos_ik
 ) 
 if joint_poses_clearence_raw:
-    final_poses = np.array(joint_poses_clearence_raw[:4]) 
+    final_poses_clearance = np.array(joint_poses_clearence_raw[:4]) 
 
-    theta2 = final_poses[1]
-    theta3 = final_poses[2]
-    final_poses[3] = -1 * (theta2 + theta3) 
+    theta2 = final_poses_clearance[1]
+    theta3 = final_poses_clearance[2]
+    final_poses_clearance[3] = -1 * (theta2 + theta3) 
 
-    print(f"Calculated Clearance Poses (rad): {[round(angle, 3) for angle in final_poses]}")
-    execute_pos(final_poses, robot_arm, duration_seconds=2.0)
+    print(f"Calculated Clearance Poses (rad): {[round(angle, 3) for angle in final_poses_clearance]}")
+    execute_pos(final_poses_clearance, robot_arm, duration_seconds=2.0)
 else:
     print("Clearance is out of reach or no solution found.")
     p.disconnect()
     exit()
-current_joint_state = p.getJointStates(robot_arm, range(4))
-current_joint_angles = [state[0] for state in current_joint_state]
-current_joint_angles_np = np.array(current_joint_angles)
+
+
+
 APPROACH_HEIGHT_OFFSET = 0.1
-approach_pos_tip = [target_pos_tip[0], target_pos_tip[1], target_pos_tip[2] + APPROACH_HEIGHT_OFFSET]
-approach_pos_ik = [approach_pos_tip[0], approach_pos_tip[1], approach_pos_tip[2] -length_EE]
 
-print(f"\nmoving to approach position:{approach_pos_tip}")
+for container_name, world_pos in rack_positions.items():
+    print(f"\nStarting sequence for container: {container_name} ")
 
-joint_poses_approach_raw = p.calculateInverseKinematics(
-    bodyUniqueId=robot_arm,
-    endEffectorLinkIndex=EE_LINK_INDEX,
-    targetPosition=approach_pos_ik
-)
 
-final_approach_poses = None
-if joint_poses_approach_raw:
-    final_approach_poses = np.array(joint_poses_approach_raw[:4])
-    theta2 = final_approach_poses[1]
-    theta3 = final_approach_poses[2]
-    final_approach_poses[3] = -1 * (theta2 + theta3) 
+    target_pos_tip = [world_pos[0], world_pos[1], world_pos[2] + 0.025] 
+    target_pos_ik = [target_pos_tip[0], target_pos_tip[1], target_pos_tip[2] + length_EE]
+    approach_pos_tip = [target_pos_tip[0], target_pos_tip[1], target_pos_tip[2] + APPROACH_HEIGHT_OFFSET]
+    approach_pos_ik = [approach_pos_tip[0], approach_pos_tip[1], approach_pos_tip[2] + length_EE]
+
+    p.resetBasePositionAndOrientation(target_marker_id, target_pos_tip, p.getQuaternionFromEuler([0, 0, 0]))
+    current_joint_state = p.getJointStates(robot_arm, range(4))
+    current_joint_angles = [state[0] for state in current_joint_state]
+    current_joint_angles_np = np.array(current_joint_angles)
     
-    print(f"Chosen Approach Poses (rad): {[round(angle, 3) for angle in final_approach_poses]}")
+    print(f"\nmoving to approach position:{approach_pos_tip}")
 
-    # execute_pos(final_approach_poses, robot_arm, duration_seconds=1.5)
-else:
-    print("Approach Target out of reach or no solution found.")
-
-
-if final_approach_poses is not None:
-    current_joint_angles_np = final_approach_poses
-    
-    print(f"\nmoving to final target position:{target_pos_tip}")
-    
-
-    joint_poses_final_raw = p.calculateInverseKinematics(
+    joint_poses_approach_raw = p.calculateInverseKinematics(
         bodyUniqueId=robot_arm,
         endEffectorLinkIndex=EE_LINK_INDEX,
-        targetPosition=target_pos_ik
+        targetPosition=approach_pos_ik
     )
-    
-    final_target_poses = None
-    
-    if joint_poses_final_raw:
-        final_target_poses = np.array(joint_poses_final_raw[:4])
-     
-        theta2_final = final_target_poses[1]
-        theta3_final = final_target_poses[2]
-        theta4_required = -1 * (theta2_final + theta3_final)
-        final_target_poses[3] = theta4_required 
+
+    final_approach_poses = None
+    if joint_poses_approach_raw:
+        final_approach_poses = np.array(joint_poses_approach_raw[:4])
+        theta2 = final_approach_poses[1]
+        theta3 = final_approach_poses[2]
+        final_approach_poses[3] = -1 * (theta2 + theta3) 
         
-        print(f"Chosen Final Poses (rad): {[round(angle, 3) for angle in final_target_poses]}")
-              
+        print(f"Chosen Approach Poses (rad): {[round(angle, 3) for angle in final_approach_poses]}")
+
+        execute_pos(final_approach_poses, robot_arm, duration_seconds=1.5)
     else:
-       print("Final Target out of reach or no solution found.")
+        print("Approach Target out of reach or no solution found. Skipping to next clearance.")
+        if final_poses_clearance is not None:
+            execute_pos(final_poses_clearance, robot_arm, duration_seconds=2.0)
+        continue
+    final_target_poses = None
+    if final_approach_poses is not None:
+        current_joint_angles_np = final_approach_poses
+        
+        print(f"\nmoving to final target position:{target_pos_tip}")
+        
+
+        joint_poses_final_raw = p.calculateInverseKinematics(
+            bodyUniqueId=robot_arm,
+            endEffectorLinkIndex=EE_LINK_INDEX,
+            targetPosition=target_pos_ik
+        )
+        
+        if joint_poses_final_raw:
+            final_target_poses = np.array(joint_poses_final_raw[:4])
          
-else:
-   final_target_poses = None
+            theta2_final = final_target_poses[1]
+            theta3_final = final_target_poses[2]
+            theta4_required = -1 * (theta2_final + theta3_final)
+            final_target_poses[3] = theta4_required 
+            
+            print(f"Chosen Final Poses (rad): {[round(angle, 3) for angle in final_target_poses]}")
+            print("\nExecuting movement to selected IK target")
+            execute_pos(final_target_poses, robot_arm, duration_seconds=1.0) 
+            
+        else:
+           print("Final Target out of reach or no solution found. Skipping to next clearance.")
+    print(f"\nReturning to safe clearence pos: {clearance_pos_tip}")
+    if final_poses_clearance is not None:
+        execute_pos(final_poses_clearance, robot_arm, duration_seconds=2.0)
+    
+    print(f"Finished sequence for container: {container_name}")
 
 
 print("\nRunning Simulation Moves")
 
-if final_target_poses is not None:
-    print("\nExecuting movement to selected IK target")
-
-    execute_pos(final_target_poses, robot_arm, duration_seconds=1.0) 
-    print("\nMovement Complete. Running final simulation loop.")
-    for i in range(1 * 240): 
-        p.stepSimulation()
-        time.sleep(1. / 240.) 
+print("\nMovement Complete")
+for i in range(1 * 240): 
+    p.stepSimulation()
+    time.sleep(1. / 240.) 
     
-else:
-    print("\nMission Aborted: No valid final target pose available.")
-
 p.disconnect()
 print("\nSimulation Finished. Arm should be at the target.")
