@@ -14,7 +14,6 @@ def is_valid(theta2,theta3):
     if not (J3_LOWER <= theta3 <= J3_UPPER):
         return False
     return True
-
 def inverse_kinematics(x_target,y_target,z_target,angle=0):
     theta1=math.atan2(y_target,x_target)
     r=math.sqrt(x_target**2+y_target**2)

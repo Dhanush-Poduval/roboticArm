@@ -104,9 +104,9 @@ for name,pos in rack_positions.items():
 print(f"Robot Loaded with {num_joints} joints. End-Effector Index: {EE_LINK_INDEX}")
 
 
-target_pos_tip = [-0.4,0.85,0.39] 
+target_pos_tip = [0.0,0.90,0.415] 
 length_EE=0.05
-target_pos_ik = [target_pos_tip[0], target_pos_tip[1], target_pos_tip[2] -length_EE-L0_BASE_HEIGHT]
+target_pos_ik = [target_pos_tip[0], target_pos_tip[1], target_pos_tip[2] -length_EE]
 
 TARGET_MARKER_RADIUS = 0.02
 target_marker_visual = p.createVisualShape(
@@ -124,7 +124,7 @@ target_marker_id = p.createMultiBody(
 clearance_pos=[0.0, 0.2,0.6]
 APPROACH_HEIGHT_OFFSET = 0.1
 approach_pos_tip = [target_pos_tip[0], target_pos_tip[1], target_pos_tip[2] -APPROACH_HEIGHT_OFFSET]
-approach_pos_ik = [approach_pos_tip[0], approach_pos_tip[1], approach_pos_tip[2] -length_EE-L0_BASE_HEIGHT]
+approach_pos_ik = [approach_pos_tip[0], approach_pos_tip[1], approach_pos_tip[2] -length_EE]
 
 
 print(f'moving to clearence pos ${clearance_pos}')
