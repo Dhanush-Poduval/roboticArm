@@ -95,6 +95,21 @@ def valid_ee(joint_angles,robot_arm,ee_link):
         return False
         
     return True
+def check_collision(id,obstacle_id,dist=0.01):
+    for obstacle_id in obstacle_id:
+        for link_index in range(-1,p.getNumJoints(id)):
+            closest_points=p.getClosestPoints(
+                bodyA=id,
+                bodyB=obstacle_id,
+                distance=dist,
+                linkIndexA=link_index,
+                linkIndexB=-1
+            )
+            if closest_points:
+                for point in closest_points:
+                    if point[8]<=dist:
+                        return True
+    return False
 shelf_positions={
     'Aruco_101': (-0.8, 0.0, 0.3),
     'Aruco_102': (0.8, 0.0, 0.3),
