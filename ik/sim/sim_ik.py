@@ -110,6 +110,36 @@ def check_collision(id,obstacle_id,dist=0.01):
                     if point[8]<=dist:
                         return True
     return False
+
+def execute_safe_pos(joint_target,robot_arm,duration=1.0,sim_time_per_step=1.0/240.0):
+    current_joint_state=p.getJointStates(robot_arm,JOINT_INDICES)
+    current_joint_angles=np.array([state[0]for state in current_joint_state])
+    target_joint_angles=np.array(joint_target)
+    steps=int(duration/sim_time_per_step)
+    if steps<2:steps=2
+    for i in range(steps):
+        alpha=i/(steps-1)
+        interpolated_pos=current_joint_angles*(1-alpha)+target_joint_angles*alpha
+        interpolated_pos[3] = -1 * (interpolated_pos[1] + interpolated_pos[2])
+        for joint_index in JOINT_INDICES:
+            p.resetJointState(
+                bodyUniqueId=robot_arm,
+                jointIndex=joint_index,
+                targetValue=interpolated_pos[joint_index]
+            )
+        if check_collision(robot_arm,SHELF_OBSTACLE_IDS):
+            print(f"Path has some blockage")
+            return False
+        for joint_index in JOINT_INDICES:
+         p.setJointMotorControl2(
+            bodyUniqueId=robot_arm,
+            jointIndex=joint_index,
+            controlMode=p.POSITION_CONTROL,
+            targetPosition=interpolated_pos[joint_index]
+         )
+        p.stepSimulation()
+        time.sleep(sim_time_per_step)
+    return True
 shelf_positions={
     'Aruco_101': (-0.8, 0.0, 0.3),
     'Aruco_102': (0.8, 0.0, 0.3),
@@ -156,6 +186,9 @@ def load_container(name,position):
     return container_id
     
 def execute_pos(joint_target, robot_arm_id, duration_seconds=1.0, sim_time_per_step=1.0 / 240.0):
+    return execute_safe_pos(joint_target,robot_arm_id,duration_seconds,sim_time_per_step)
+    '''
+    Old logic without collision detection
     num_steps = int(duration_seconds / sim_time_per_step)
     for i in range(num_steps):
         for joint_index in range(4):
@@ -167,7 +200,7 @@ def execute_pos(joint_target, robot_arm_id, duration_seconds=1.0, sim_time_per_s
          )
         p.stepSimulation()
         time.sleep(sim_time_per_step)
-
+    '''
 for name,pos in rack_positions.items():
    containers[name]=load_container(name,pos)
 
