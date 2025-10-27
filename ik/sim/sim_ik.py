@@ -50,7 +50,7 @@ SHELF_THICKNESS = 0.04
 SHELF_HEIGHT = 0.8
 SHELF_WIDTH = 2.3
 SHELF_DEPTH = 0.8
-shelf_pos=np.array([0.0,0.1,0.0])
+shelf_pos=np.array([0.2,0.8,-0.3])
 shelf_floor_half=[SHELF_WIDTH/2,SHELF_DEPTH/2,SHELF_THICKNESS/2]
 shelf_floor_pos = [shelf_pos[0], shelf_pos[1], shelf_pos[2] + SHELF_THICKNESS / 2]
 shelf_floor_id = load_obstacle(shelf_floor_pos, shelf_floor_half, color=[0.5, 0.5, 0.5, 0.7])
@@ -98,10 +98,10 @@ def valid_ee(joint_angles,robot_arm,ee_link):
 def check_collision(id,obstacle_id,dist=0.01):
     
     for link_index in range(-1,p.getNumJoints(id)):
-            for obstacle_id in obstacle_id:
+            for obstacle in obstacle_id:
                 closest_points=p.getClosestPoints(
                     bodyA=id,
-                    bodyB=obstacle_id,
+                    bodyB=obstacle,
                     distance=dist,
                     linkIndexA=link_index,
                     linkIndexB=-1
@@ -162,6 +162,17 @@ def execute_safe_pos(joint_target,robot_arm,duration=1.0,sim_time_per_step=1.0/2
         print("Final position resulted in collision.")
         return False
     return True
+
+def container_obstacle(robot,container_id,enable=0):
+    for link_index in range(-1,p.getNumJoints(robot)):
+        p.setCollisionFilterPair(
+            bodyUniqueIdA=robot,
+            bodyUniqueIdB=container_id,
+            linkIndexA=link_index,
+            linkIndexB=-1,
+            enableCollision=enable ,
+        )
+    print(f"Collision between Robot and Container {container_id} is {'disabled' if enable == 0 else 'enabled'}.")
 shelf_positions={
     'Aruco_101': (-0.8, 0.0, 0.3),
     'Aruco_102': (0.8, 0.0, 0.3),
@@ -288,7 +299,8 @@ APPROACH_HEIGHT_OFFSET = 0.1
 for container_name, world_pos in rack_positions.items():
     print(f"\nStarting sequence for container: {container_name} ")
 
-
+    container_id=containers[container_name]
+    container_obstacle(robot_arm,container_id,enable=0)
     target_pos_tip = [world_pos[0], world_pos[1], world_pos[2] + 0.025] 
     target_pos_ik = [target_pos_tip[0], target_pos_tip[1], target_pos_tip[2] + length_EE]
     approach_pos_tip = [target_pos_tip[0], target_pos_tip[1], target_pos_tip[2] + APPROACH_HEIGHT_OFFSET]
