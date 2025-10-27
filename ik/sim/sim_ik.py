@@ -211,7 +211,7 @@ target_pos_tip = [-0.4,0.85,0.39]
 length_EE = 0.05
 
 
-target_pos_ik = [target_pos_tip[0], target_pos_tip[1], target_pos_tip[2] + length_EE]
+target_pos_ik = [target_pos_tip[0], target_pos_tip[1], target_pos_tip[2]]
 
 TARGET_MARKER_RADIUS = 0.02
 target_marker_visual = p.createVisualShape(
@@ -244,9 +244,16 @@ if joint_poses_clearence_raw:
     theta2 = final_poses_clearance[1]
     theta3 = final_poses_clearance[2]
     final_poses_clearance[3] = -1 * (theta2 + theta3) 
-
+    if not valid_ee(final_poses_clearance,robot_arm,EE_LINK_INDEX):
+        print("Initial clearence violates constraints")
+        p.disconnect()
+        exit()
+    
     print(f"Calculated Clearance Poses (rad): {[round(angle, 3) for angle in final_poses_clearance]}")
-    execute_pos(final_poses_clearance, robot_arm, duration_seconds=2.0)
+    if not  execute_pos(final_poses_clearance, robot_arm, duration_seconds=2.0):
+        print("Fail due to path collision")
+        p.disconnect()
+        exit()
 else:
     print("Clearance is out of reach or no solution found.")
     p.disconnect()
@@ -284,10 +291,16 @@ for container_name, world_pos in rack_positions.items():
         theta2 = final_approach_poses[1]
         theta3 = final_approach_poses[2]
         final_approach_poses[3] = -1 * (theta2 + theta3) 
-        
+        if not valid_ee(final_approach_poses,robot_arm,EE_LINK_INDEX):
+            print("Contraints have been violated in this path")
+            if final_poses_clearance is not None: execute_pos(final_poses_clearance, robot_arm, duration_seconds=1.0)
+            continue
         print(f"Chosen Approach Poses (rad): {[round(angle, 3) for angle in final_approach_poses]}")
 
-        execute_pos(final_approach_poses, robot_arm, duration_seconds=1.5)
+        if not execute_pos(final_approach_poses, robot_arm, duration_seconds=1.5):
+            print("Approach Move FAILED due to path collision. Returning to clearance.")
+            if final_poses_clearance is not None: execute_pos(final_poses_clearance, robot_arm, duration_seconds=1.0)
+            continue
     else:
         print("Approach Target out of reach or no solution found. Skipping to next clearance.")
         if final_poses_clearance is not None:
@@ -313,13 +326,20 @@ for container_name, world_pos in rack_positions.items():
             theta3_final = final_target_poses[2]
             theta4_required = -1 * (theta2_final + theta3_final)
             final_target_poses[3] = theta4_required 
+            if not valid_ee(final_target_poses, robot_arm, EE_LINK_INDEX):
+                print("Final Target Pose violates spatial constraints. Skipping.")
             
+            else: 
+                print(f"Chosen Final Poses (rad): {[round(angle, 3) for angle in final_target_poses]}")
+                print("\nExecuting movement to selected IK target")
+                if not execute_pos(final_target_poses, robot_arm, duration_seconds=1.0):
+                    print("Final Target Move FAILED due to path collision.")
             print(f"Chosen Final Poses (rad): {[round(angle, 3) for angle in final_target_poses]}")
             print("\nExecuting movement to selected IK target")
             execute_pos(final_target_poses, robot_arm, duration_seconds=1.0) 
             
         else:
-           print("Final Target out of reach or no solution found. Skipping to next clearance.")
+           print("Final Target out of reach .")
     print(f"\nReturning to safe clearence pos: {clearance_pos_tip}")
     if final_poses_clearance is not None:
         execute_pos(final_poses_clearance, robot_arm, duration_seconds=2.0)
