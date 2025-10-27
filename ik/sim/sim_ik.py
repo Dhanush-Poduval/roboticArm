@@ -26,19 +26,75 @@ for i in range(p.getNumJoints(robot_arm)):
 EE_LINK_INDEX = 3
 LINK_RADIUS=0.05
 shelf_safety_margin=0.1
-shelf_half=np.array([0.8,0.4,0.02])
-shelf_pos=np.array([0.0, 1.1, 0.37])
+num_joints=p.getNumJoints(robot_arm)
+#shelf_half=np.array([0.8,0.4,0.02])
+#shelf_pos=np.array([0.0, 1.1, 0.37])
 num_joints = p.getNumJoints(robot_arm)
 containers={}
+JOINT_INDICES = list(range(4))
+length_EE = 0.05
+APPROACH_HEIGHT_OFFSET = 0.1
 
-shelf_top_z=shelf_pos[2]+shelf_half[2]
-container_base_z=shelf_top_z
+def load_obstacle(position,half_extents,color=[0.5,0.5,0.5,1]):
+    visual_shape=p.createVisualShape(p.GEOM_BOX,halfExtents=half_extents,rgbaColor=color)
+    collision_shape=p.createCollisionShape(p.GEOM_BOX,halfExtents=half_extents)
+    obstacle_id=p.createMultiBody(
+        baseMass=0,
+        baseCollisionShapeIndex=collision_shape,
+        baseVisualShapeIndex=visual_shape,
+        basePosition=position,
+        baseOrientation=p.getQuaternionFromEuler([0, 0, 0])
+    )
+    return obstacle_id
+SHELF_THICKNESS = 0.04
+SHELF_HEIGHT = 0.8
+SHELF_WIDTH = 1.6 
+SHELF_DEPTH = 0.8
+shelf_pos=np.array([0.0,0.1,0.0])
+shelf_floor_half=[SHELF_WIDTH/2,SHELF_DEPTH/2,SHELF_THICKNESS/2]
+shelf_floor_pos = [shelf_pos[0], shelf_pos[1], shelf_pos[2] + SHELF_THICKNESS / 2]
+shelf_floor_id = load_obstacle(shelf_floor_pos, shelf_floor_half, color=[0.5, 0.5, 0.5, 0.7])
+shelf_side_half = [SHELF_THICKNESS / 2, SHELF_DEPTH / 2, SHELF_HEIGHT / 2]
+side_center_z = shelf_floor_pos[2] + shelf_floor_half[2] + SHELF_HEIGHT / 2
+left_side_x = shelf_pos[0] - SHELF_WIDTH / 2 + SHELF_THICKNESS / 2
+left_wall_pos = [left_side_x, shelf_pos[1], side_center_z]
+shelf_left_id = load_obstacle(left_wall_pos, shelf_side_half, color=[0.8, 0.2, 0.2, 0.7])
+right_side_x = shelf_pos[0] + SHELF_WIDTH / 2 - SHELF_THICKNESS / 2
+right_wall_pos = [right_side_x, shelf_pos[1], side_center_z]
+shelf_right_id = load_obstacle(right_wall_pos, shelf_side_half, color=[0.2, 0.2, 0.8, 0.7])
+SHELF_OBSTACLE_IDS = [shelf_floor_id, shelf_left_id, shelf_right_id]
+container_base_z=shelf_floor_pos[2]+shelf_floor_half[2]
 
 rack_positions={
     'C07': (-0.4, 0.9, container_base_z), 
     'C08': (0.0, 0.9, container_base_z),
     'C09': (0.4, 0.9, container_base_z),
 }
+
+x_min_safe=-0.70
+x_max_safe=0.70
+y_app_min=0.5
+y_app_max=1.05
+z_min_safe=0.1
+def valid_ee(joint_angles,robot_arm,ee_link):
+    for j in JOINT_INDICES:
+        p.resetJointState(robot_arm, j, joint_angles[j])
+
+    link_state = p.getLinkState(robot_arm,EE_LINK_INDEX)
+    ee_pos = link_state[0]
+    x, y, z = ee_pos[0], ee_pos[1], ee_pos[2]
+    if x < x_min_safe or x > x_max_safe:
+        print(f"\tConstraint Violation: X={x:.3f} outside [{x_min_safe}, {x_max_safe}] (Shelf Side)")
+        return False
+    if y < y_app_min or y > y_app_max:
+        print(f"\tConstraint Violation: Y={y:.3f} outside [{y_app_min}, {y_app_max}] (Shelf Depth)")
+        return False
+        
+    if z < z_min_safe:
+        print(f"\tConstraint Violation: Z={z:.3f} below {z_min_safe}")
+        return False
+        
+    return True
 shelf_positions={
     'Aruco_101': (-0.8, 0.0, 0.3),
     'Aruco_102': (0.8, 0.0, 0.3),

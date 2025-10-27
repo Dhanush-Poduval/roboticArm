@@ -9,7 +9,8 @@ camera_height=480
 FOV=60.0
 near_plane=0.01
 far_plane=10.0
-
+camera_eye_pos=[0.5,0.5,1.0]
+camera_target_pos=[0.0,1.0,0.3]
 focal_length=(camera_width/2)/math.tan(math.radians(FOV/2))
 
 K=np.array([
@@ -43,3 +44,17 @@ def get_containers(client_id,container_color,camera_eye,camera_target):
     depth_data = np.reshape(img_arr[3], (camera_height, camera_width))#simulating the tof sensor data basically
 
     bgr_image=cv2.cvtColor(rgb_data,cv2.COLOR_RGB2BGR)
+
+def run():
+    c_target_vision,a_targets,debug_img=get_containers(
+        p._client,'GREEN',camera_eye_pos,camera_target_pos
+    )
+    cv2.imshow('Detection check',debug_img)
+    cv2.waitKey(1000)
+    cv2.destroyAllWindows()
+
+    containers_to_process=list(c_target_vision.keys())
+    target=p.getQuaternionFromEuler([0,0,0])
+
+    for c_vision_id in containers_to_process:
+        pyb=CONT
