@@ -48,7 +48,7 @@ def load_obstacle(position,half_extents,color=[0.5,0.5,0.5,1]):
     return obstacle_id
 SHELF_THICKNESS = 0.04
 SHELF_HEIGHT = 0.8
-SHELF_WIDTH = 1.6 
+SHELF_WIDTH = 2.3
 SHELF_DEPTH = 0.8
 shelf_pos=np.array([0.0,0.1,0.0])
 shelf_floor_half=[SHELF_WIDTH/2,SHELF_DEPTH/2,SHELF_THICKNESS/2]
@@ -73,8 +73,8 @@ rack_positions={
 
 x_min_safe=-0.70
 x_max_safe=0.70
-y_app_min=0.5
-y_app_max=1.05
+y_app_min=0.3
+y_app_max=1.8
 z_min_safe=0.1
 def valid_ee(joint_angles,robot_arm,ee_link):
     for j in JOINT_INDICES:
