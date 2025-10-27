@@ -66,9 +66,9 @@ SHELF_OBSTACLE_IDS = [shelf_floor_id, shelf_left_id, shelf_right_id]
 container_base_z=shelf_floor_pos[2]+shelf_floor_half[2]
 
 rack_positions={
-    'C07': (-0.4, 0.9, container_base_z), 
-    'C08': (0.0, 0.9, container_base_z),
-    'C09': (0.4, 0.9, container_base_z),
+    'C07': (-0.4, 0.9, container_base_z+0.5), 
+    'C08': (0.0, 0.9, container_base_z+0.5),
+    'C09': (0.4, 0.9, container_base_z+0.5),
 }
 
 x_min_safe=-0.70
