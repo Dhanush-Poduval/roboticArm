@@ -114,23 +114,23 @@ def check_collision(id,obstacle_id,dist=0.01):
 def check_trajectory_collision(robot_arm,current_angles,target_angles,steps):
     original_joint_angles = np.array(current_angles)
     
-    # 1. Sample and Check Path
+    #check for like the path 
     for i in range(steps):
         alpha = i / (steps - 1)
         interpolated_pos = original_joint_angles * (1 - alpha) + target_angles * alpha
         interpolated_pos[3] = -1 * (interpolated_pos[1] + interpolated_pos[2])
         
-        # INSTANTLY move the arm to the sampled point for collision checking
+ 
         for joint_index in JOINT_INDICES:
             p.resetJointState(robot_arm, joint_index, interpolated_pos[joint_index])
         
         if check_collision(robot_arm, SHELF_OBSTACLE_IDS):
-            # Reset arm to original state before returning failure
+
             for joint_index in JOINT_INDICES:
                 p.resetJointState(robot_arm, joint_index, original_joint_angles[joint_index])
             return True # Collision detected
             
-    # 2. Reset arm to original state if no collision was found (Crucial cleanup)
+
     for joint_index in JOINT_INDICES:
         p.resetJointState(robot_arm, joint_index, original_joint_angles[joint_index])
 

@@ -21,7 +21,6 @@ robot_arm = p.loadURDF(urdf_path, useFixedBase=True, basePosition=[0,0,0])
 print("\nPyBullet Joint Info")
 for i in range(p.getNumJoints(robot_arm)):
     joint_info = p.getJointInfo(robot_arm, i)
-    print(f"Index {i}: Name '{joint_info[1].decode('utf-8')}', Type: {joint_info[2]}")
 EE_LINK_INDEX = 3 
 LINK_RADIUS=0.05
 L0_BASE_HEIGHT = 0.1
