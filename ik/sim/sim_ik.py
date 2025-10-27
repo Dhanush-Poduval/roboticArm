@@ -96,40 +96,58 @@ def valid_ee(joint_angles,robot_arm,ee_link):
         
     return True
 def check_collision(id,obstacle_id,dist=0.01):
-    for obstacle_id in obstacle_id:
-        for link_index in range(-1,p.getNumJoints(id)):
-            closest_points=p.getClosestPoints(
-                bodyA=id,
-                bodyB=obstacle_id,
-                distance=dist,
-                linkIndexA=link_index,
-                linkIndexB=-1
-            )
-            if closest_points:
-                for point in closest_points:
-                    if point[8]<=dist:
-                        return True
+    
+    for link_index in range(-1,p.getNumJoints(id)):
+            for obstacle_id in obstacle_id:
+                closest_points=p.getClosestPoints(
+                    bodyA=id,
+                    bodyB=obstacle_id,
+                    distance=dist,
+                    linkIndexA=link_index,
+                    linkIndexB=-1
+                )
+                if closest_points:
+                    for point in closest_points:
+                        if point[8]<=dist:
+                            return True
     return False
+def check_trajectory_collision(robot_arm,current_angles,target_angles,steps):
+    original_joint_angles = np.array(current_angles)
+    
+    # 1. Sample and Check Path
+    for i in range(steps):
+        alpha = i / (steps - 1)
+        interpolated_pos = original_joint_angles * (1 - alpha) + target_angles * alpha
+        interpolated_pos[3] = -1 * (interpolated_pos[1] + interpolated_pos[2])
+        
+        # INSTANTLY move the arm to the sampled point for collision checking
+        for joint_index in JOINT_INDICES:
+            p.resetJointState(robot_arm, joint_index, interpolated_pos[joint_index])
+        
+        if check_collision(robot_arm, SHELF_OBSTACLE_IDS):
+            # Reset arm to original state before returning failure
+            for joint_index in JOINT_INDICES:
+                p.resetJointState(robot_arm, joint_index, original_joint_angles[joint_index])
+            return True # Collision detected
+            
+    # 2. Reset arm to original state if no collision was found (Crucial cleanup)
+    for joint_index in JOINT_INDICES:
+        p.resetJointState(robot_arm, joint_index, original_joint_angles[joint_index])
 
+    return False # No collision detected
 def execute_safe_pos(joint_target,robot_arm,duration=1.0,sim_time_per_step=1.0/240.0):
     current_joint_state=p.getJointStates(robot_arm,JOINT_INDICES)
     current_joint_angles=np.array([state[0]for state in current_joint_state])
     target_joint_angles=np.array(joint_target)
     steps=int(duration/sim_time_per_step)
     if steps<2:steps=2
+    if check_trajectory_collision(robot_arm,current_joint_angles,target_joint_angles,steps):
+        print(f"Path has some blockage")
+        return False
     for i in range(steps):
         alpha=i/(steps-1)
         interpolated_pos=current_joint_angles*(1-alpha)+target_joint_angles*alpha
         interpolated_pos[3] = -1 * (interpolated_pos[1] + interpolated_pos[2])
-        for joint_index in JOINT_INDICES:
-            p.resetJointState(
-                bodyUniqueId=robot_arm,
-                jointIndex=joint_index,
-                targetValue=interpolated_pos[joint_index]
-            )
-        if check_collision(robot_arm,SHELF_OBSTACLE_IDS):
-            print(f"Path has some blockage")
-            return False
         for joint_index in JOINT_INDICES:
          p.setJointMotorControl2(
             bodyUniqueId=robot_arm,
@@ -139,6 +157,10 @@ def execute_safe_pos(joint_target,robot_arm,duration=1.0,sim_time_per_step=1.0/2
          )
         p.stepSimulation()
         time.sleep(sim_time_per_step)
+    p.stepSimulation() # Ensure final position is settled
+    if check_collision(robot_arm, SHELF_OBSTACLE_IDS, dist=0.001):
+        print("Final position resulted in collision.")
+        return False
     return True
 shelf_positions={
     'Aruco_101': (-0.8, 0.0, 0.3),
@@ -334,9 +356,7 @@ for container_name, world_pos in rack_positions.items():
                 print("\nExecuting movement to selected IK target")
                 if not execute_pos(final_target_poses, robot_arm, duration_seconds=1.0):
                     print("Final Target Move FAILED due to path collision.")
-            print(f"Chosen Final Poses (rad): {[round(angle, 3) for angle in final_target_poses]}")
-            print("\nExecuting movement to selected IK target")
-            execute_pos(final_target_poses, robot_arm, duration_seconds=1.0) 
+           
             
         else:
            print("Final Target out of reach .")
@@ -349,10 +369,6 @@ for container_name, world_pos in rack_positions.items():
 
 print("\nRunning Simulation Moves")
 
-print("\nMovement Complete")
-for i in range(1 * 240): 
-    p.stepSimulation()
-    time.sleep(1. / 240.) 
-    
+print("\nMovement Complete")    
 p.disconnect()
 print("\nSimulation Finished. Arm should be at the target.")

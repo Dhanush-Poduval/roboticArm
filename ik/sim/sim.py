@@ -4,7 +4,7 @@ import time
 import pybullet_data
 import math 
 import numpy as np
-from inverse_kinematics import inverse_kinematics
+from ..inverse_k import inverse_kinematics
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(script_dir)
