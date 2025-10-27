@@ -50,7 +50,7 @@ SHELF_THICKNESS = 0.04
 SHELF_HEIGHT = 0.8
 SHELF_WIDTH = 2.3
 SHELF_DEPTH = 0.8
-shelf_pos=np.array([0.2,0.8,-0.3])
+shelf_pos=np.array([0.2,0.8,0.0])
 shelf_floor_half=[SHELF_WIDTH/2,SHELF_DEPTH/2,SHELF_THICKNESS/2]
 shelf_floor_pos = [shelf_pos[0], shelf_pos[1], shelf_pos[2] + SHELF_THICKNESS / 2]
 shelf_floor_id = load_obstacle(shelf_floor_pos, shelf_floor_half, color=[0.5, 0.5, 0.5, 0.7])
@@ -64,7 +64,25 @@ right_wall_pos = [right_side_x, shelf_pos[1], side_center_z]
 shelf_right_id = load_obstacle(right_wall_pos, shelf_side_half, color=[0.2, 0.2, 0.8, 0.7])
 SHELF_OBSTACLE_IDS = [shelf_floor_id, shelf_left_id, shelf_right_id]
 container_base_z=shelf_floor_pos[2]+shelf_floor_half[2]
-
+intermediate_shelf_thickness=0.02
+intermediate_shelf_height=intermediate_shelf_thickness/2
+INTERMEDIATE_SHELF_HALF = [SHELF_WIDTH / 2 - SHELF_THICKNESS, SHELF_DEPTH / 2, intermediate_shelf_height]
+container_vertical_spacing=0.2
+shelf_y_pos = shelf_pos[1]
+shelf_x_pos = shelf_pos[0]
+shelf_z_level=[
+    container_base_z+container_vertical_spacing,
+    container_base_z+2*container_vertical_spacing
+]
+'''
+inter_shelf_ids=[]
+for i , z_center in enumerate(shelf_z_level):
+    shelf_pos_z = z_center - CONTAINER_HALF_HEIGHT - INTERMEDIATE_SHELF_HALF
+    shelf_pos_i = [shelf_x_pos, shelf_y_pos, shelf_pos_z]
+    shelf_id = load_obstacle(shelf_pos_i, INTERMEDIATE_SHELF_HALF, color=[0.3, 0.3, 0.3, 0.7])
+    inter_shelf_ids.append(shelf_id)
+    print(f"Loaded Intermediate Horizontal Shelf {i+1} at: {shelf_pos_i}")
+'''
 rack_positions={
     'C07': (-0.4, 0.9, container_base_z+0.5), 
     'C08': (0.0, 0.9, container_base_z+0.5),
