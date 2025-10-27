@@ -157,6 +157,8 @@ def execute_safe_pos(joint_target,robot_arm,duration=1.0,sim_time_per_step=1.0/2
     current_joint_state=p.getJointStates(robot_arm,JOINT_INDICES)
     current_joint_angles=np.array([state[0]for state in current_joint_state])
     target_joint_angles=np.array(joint_target)
+    max_v=3.0
+    max_force=100.0
     steps=int(duration/sim_time_per_step)
     if steps<2:steps=2
     if check_trajectory_collision(robot_arm,current_joint_angles,target_joint_angles,steps):
@@ -171,7 +173,9 @@ def execute_safe_pos(joint_target,robot_arm,duration=1.0,sim_time_per_step=1.0/2
             bodyUniqueId=robot_arm,
             jointIndex=joint_index,
             controlMode=p.POSITION_CONTROL,
-            targetPosition=interpolated_pos[joint_index]
+            targetPosition=interpolated_pos[joint_index],
+            maxVelocity=max_v,
+            force=max_force
          )
         p.stepSimulation()
         time.sleep(sim_time_per_step)
@@ -295,13 +299,21 @@ if joint_poses_clearence_raw:
     theta2 = final_poses_clearance[1]
     theta3 = final_poses_clearance[2]
     final_poses_clearance[3] = -1 * (theta2 + theta3) 
+    for j in JOINT_INDICES:
+       p.resetJointState(
+            bodyUniqueId=robot_arm,
+            jointIndex=j,
+            targetValue=final_poses_clearance[j],
+            targetVelocity=0.0
+        )
+    p.stepSimulation()
     if not valid_ee(final_poses_clearance,robot_arm,EE_LINK_INDEX):
         print("Initial clearence violates constraints")
         p.disconnect()
         exit()
     
     print(f"Calculated Clearance Poses (rad): {[round(angle, 3) for angle in final_poses_clearance]}")
-    if not  execute_pos(final_poses_clearance, robot_arm, duration_seconds=2.0):
+    if not  execute_pos(final_poses_clearance, robot_arm, duration_seconds=0.1):
         print("Fail due to path collision")
         p.disconnect()
         exit()
