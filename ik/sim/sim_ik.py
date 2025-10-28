@@ -324,7 +324,8 @@ else:
 
 
 
-APPROACH_HEIGHT_OFFSET = 0.1
+#APPROACH_HEIGHT_OFFSET = 0.1
+horizontal_approach_offset=0.15
 
 for container_name, world_pos in rack_positions.items():
     print(f"\nStarting sequence for container: {container_name} ")
@@ -333,8 +334,8 @@ for container_name, world_pos in rack_positions.items():
     container_obstacle(robot_arm,container_id,enable=0)
     target_pos_tip = [world_pos[0], world_pos[1], world_pos[2] + 0.025] 
     target_pos_ik = [target_pos_tip[0], target_pos_tip[1], target_pos_tip[2] + length_EE]
-    approach_pos_tip = [target_pos_tip[0], target_pos_tip[1], target_pos_tip[2] + APPROACH_HEIGHT_OFFSET]
-    approach_pos_ik = [approach_pos_tip[0], approach_pos_tip[1], approach_pos_tip[2] + length_EE]
+    approach_pos_tip = [target_pos_tip[0], target_pos_tip[1]-horizontal_approach_offset, target_pos_tip[2]]
+    approach_pos_ik = [approach_pos_tip[0], approach_pos_tip[1], approach_pos_tip[2]+ length_EE ]
 
     p.resetBasePositionAndOrientation(target_marker_id, target_pos_tip, p.getQuaternionFromEuler([0, 0, 0]))
     current_joint_state = p.getJointStates(robot_arm, range(4))
