@@ -34,9 +34,9 @@ shelf_top_z=shelf_pos[2]+shelf_half[2]
 container_base_z=shelf_top_z
 
 rack_positions={
-    'C07': (-0.4, 0.9, container_base_z), 
-    'C08': (0.0, 0.9, container_base_z),
-    'C09': (0.4, 0.9, container_base_z),
+    'C07': (-0.4, 0.7, container_base_z), 
+    'C08': (0.0, 0.7, container_base_z),
+    'C09': (0.4, 0.7, container_base_z),
 
 }
 shelf_positions={

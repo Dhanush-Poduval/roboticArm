@@ -38,7 +38,7 @@ griper_join_indices=[gripper_left,gripper_right]
 gripper_open=0.03#max it can open and close basically
 gripper_close=0.00
 gripper_max_force=10.0
-length_EE = 0.05
+length_EE = 0.10
 
 APPROACH_HEIGHT_OFFSET = 0.1
 grasped_container_id = -1
@@ -93,9 +93,9 @@ for i , z_center in enumerate(shelf_z_level):
     print(f"Loaded Intermediate Horizontal Shelf {i+1} at: {shelf_pos_i}")
 '''
 rack_positions={
-    'C07': (-0.4, 0.9, container_base_z+0.5), 
-    'C08': (0.0, 0.9, container_base_z+0.5),
-    'C09': (0.4, 0.9, container_base_z+0.5),
+    'C07': (-0.4, 0.7, container_base_z+0.7), 
+    'C08': (0.0, 0.7, container_base_z+0.7),
+    'C09': (0.4, 0.7, container_base_z+0.7),
 }
 
 x_min_safe=-0.70
@@ -293,7 +293,7 @@ print(f"Robot Loaded with {num_joints} joints. End-Effector Index: {EE_LINK_INDE
 
 target_pos_tip = [-0.4,0.85,0.39] 
 
-length_EE = 0.05
+length_EE = 0.10
 
 
 target_pos_ik = [target_pos_tip[0], target_pos_tip[1], target_pos_tip[2]]
@@ -357,7 +357,7 @@ else:
 
 
 #APPROACH_HEIGHT_OFFSET = 0.1
-horizontal_approach_offset=0.15
+horizontal_approach_offset=0.09
 
 for container_name, world_pos in rack_positions.items():
     print(f"\nStarting sequence for container: {container_name} ")
@@ -366,9 +366,9 @@ for container_name, world_pos in rack_positions.items():
     set_gripper_pos(robot_arm, gripper_open, duration_seconds=0.5)
     container_obstacle(robot_arm,container_id,enable=0)
     target_pos_tip = [world_pos[0], world_pos[1], world_pos[2] + 0.025] 
-    target_pos_ik = [target_pos_tip[0], target_pos_tip[1], target_pos_tip[2] + length_EE]
+    target_pos_ik = [target_pos_tip[0], target_pos_tip[1]-length_EE, target_pos_tip[2]]
     approach_pos_tip = [target_pos_tip[0], target_pos_tip[1]-horizontal_approach_offset, target_pos_tip[2]]
-    approach_pos_ik = [approach_pos_tip[0], approach_pos_tip[1], approach_pos_tip[2]+ length_EE ]
+    approach_pos_ik = [approach_pos_tip[0], approach_pos_tip[1]-length_EE, approach_pos_tip[2]]
 
     p.resetBasePositionAndOrientation(target_marker_id, target_pos_tip, p.getQuaternionFromEuler([0, 0, 0]))
     current_joint_state = p.getJointStates(robot_arm, range(4))
