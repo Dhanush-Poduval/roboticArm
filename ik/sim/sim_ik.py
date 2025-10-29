@@ -305,7 +305,7 @@ target_marker_id = p.createMultiBody(
     basePosition=target_pos_tip
 )
 
-clearance_pos_tip = [0.0, 0.4, 0.7] 
+clearance_pos_tip = [0.0, target_pos_ik[1]-0.4, 0.7] 
 clearance_pos_ik = [clearance_pos_tip[0], clearance_pos_tip[1], clearance_pos_tip[2] + length_EE]
 current_joint_angles = [state[0] for state in p.getJointStates(robot_arm, JOINT_INDICES)]
 
