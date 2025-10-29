@@ -32,6 +32,12 @@ num_joints=p.getNumJoints(robot_arm)
 num_joints = p.getNumJoints(robot_arm)
 containers={}
 JOINT_INDICES = list(range(4))
+gripper_left=4
+gripper_right=5
+griper_join_indices=[gripper_left,gripper_right]
+griper_open=0.03#max it can open and close basically
+gripper_close=0.00
+gripper_max_force=10.0
 length_EE = 0.05
 APPROACH_HEIGHT_OFFSET = 0.1
 
@@ -184,6 +190,27 @@ def execute_safe_pos(joint_target,robot_arm,duration=1.0,sim_time_per_step=1.0/2
         print("Final position resulted in collision.")
         return False
     return True
+def set_gripper_pos(robot_arm,position,duration_seconds=0.5,sim_time=1.0/240.0):
+    target_position_left=position
+    target_position_right = position
+    steps=int(duration_seconds/sim_time)
+    if steps<2:steps=2
+    for joint_index in JOINT_INDICES:
+        target_val = target_position_left if joint_index ==gripper_left  else target_position_right
+        
+        p.setJointMotorControl2(
+            bodyUniqueId=robot_arm,
+            jointIndex=joint_index,
+            controlMode=p.POSITION_CONTROL,
+            targetPosition=target_val,
+            maxVelocity=1.0,
+            force=gripper_max_force
+        )
+    
+    for _ in range(steps):
+        p.stepSimulation()
+        time.sleep(sim_time)
+    print("Gripper action complete.")
 
 def container_obstacle(robot,container_id,enable=0):
     for link_index in range(-1,p.getNumJoints(robot)):
@@ -386,7 +413,6 @@ for container_name, world_pos in rack_positions.items():
         
         if joint_poses_final_raw:
             final_target_poses = np.array(joint_poses_final_raw[:4])
-         
             theta2_final = final_target_poses[1]
             theta3_final = final_target_poses[2]
             theta4_required = -1 * (theta2_final + theta3_final)
