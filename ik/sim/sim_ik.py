@@ -23,7 +23,7 @@ for i in range(p.getNumJoints(robot_arm)):
     joint_info = p.getJointInfo(robot_arm, i)
     print(f"Index {i}: Name '{joint_info[1].decode('utf-8')}', Type: {joint_info[2]}")
 
-EE_LINK_INDEX = 3
+EE_LINK_INDEX = 4
 LINK_RADIUS=0.05
 shelf_safety_margin=0.1
 num_joints=p.getNumJoints(robot_arm)
@@ -35,11 +35,14 @@ JOINT_INDICES = list(range(4))
 gripper_left=4
 gripper_right=5
 griper_join_indices=[gripper_left,gripper_right]
-griper_open=0.03#max it can open and close basically
+gripper_open=0.03#max it can open and close basically
 gripper_close=0.00
 gripper_max_force=10.0
 length_EE = 0.05
+
 APPROACH_HEIGHT_OFFSET = 0.1
+grasped_container_id = -1
+gripper_constraint_id = -1
 
 def load_obstacle(position,half_extents,color=[0.5,0.5,0.5,1]):
     visual_shape=p.createVisualShape(p.GEOM_BOX,halfExtents=half_extents,rgbaColor=color)
@@ -195,7 +198,7 @@ def set_gripper_pos(robot_arm,position,duration_seconds=0.5,sim_time=1.0/240.0):
     target_position_right = position
     steps=int(duration_seconds/sim_time)
     if steps<2:steps=2
-    for joint_index in JOINT_INDICES:
+    for joint_index in griper_join_indices:
         target_val = target_position_left if joint_index ==gripper_left  else target_position_right
         
         p.setJointMotorControl2(
@@ -212,7 +215,7 @@ def set_gripper_pos(robot_arm,position,duration_seconds=0.5,sim_time=1.0/240.0):
         time.sleep(sim_time)
     print("Gripper action complete.")
 
-def container_obstacle(robot,container_id,enable=0):
+def container_obstacle(robot,container_id,enable=1):
     for link_index in range(-1,p.getNumJoints(robot)):
         p.setCollisionFilterPair(
             bodyUniqueIdA=robot,
@@ -333,6 +336,8 @@ if joint_poses_clearence_raw:
             targetValue=final_poses_clearance[j],
             targetVelocity=0.0
         )
+    p.resetJointState(robot_arm, gripper_left, gripper_open, targetVelocity=0.0)
+    p.resetJointState(robot_arm, gripper_right, gripper_open, targetVelocity=0.0)
     p.stepSimulation()
     if not valid_ee(final_poses_clearance,robot_arm,EE_LINK_INDEX):
         print("Initial clearence violates constraints")
@@ -358,6 +363,7 @@ for container_name, world_pos in rack_positions.items():
     print(f"\nStarting sequence for container: {container_name} ")
 
     container_id=containers[container_name]
+    set_gripper_pos(robot_arm, gripper_open, duration_seconds=0.5)
     container_obstacle(robot_arm,container_id,enable=0)
     target_pos_tip = [world_pos[0], world_pos[1], world_pos[2] + 0.025] 
     target_pos_ik = [target_pos_tip[0], target_pos_tip[1], target_pos_tip[2] + length_EE]
@@ -419,6 +425,30 @@ for container_name, world_pos in rack_positions.items():
             final_target_poses[3] = theta4_required 
             if not valid_ee(final_target_poses, robot_arm, EE_LINK_INDEX):
                 print("Final Target Pose violates spatial constraints. Skipping.")
+                if final_poses_clearance is not None:
+                    execute_pos(final_poses_clearance,robot_arm ,duration_seconds=1.0)
+                    continue
+                print('Holding container')
+                set_gripper_pos(robot_arm,gripper_close,duration_seconds=1.0)
+                gripper_constraint_id = p.createConstraint(
+                parentBodyUniqueId=robot_arm,
+                parentLinkIndex=EE_LINK_INDEX, 
+                childBodyUniqueId=container_id,
+                childLinkIndex=-1,
+                jointType=p.JOINT_FIXED,
+                jointAxis=[0, 0, 0],
+                parentFramePosition=[0, 0, 0],
+                childFramePosition=[0, 0, 0])
+                grasped_container_id=container_id
+                print(f'Container {container_name} is caught')
+                if final_poses_clearance is not None:
+                    execute_pos(final_poses_clearance,robot_arm,duration_seconds=2.0)
+                if gripper_constraint_id != -1:
+                 print(f"releasing the container{container_name} ")
+                 p.removeConstraint(gripper_constraint_id)
+                 gripper_constraint_id = -1
+                 grasped_container_id = -1
+                set_gripper_pos(robot_arm, gripper_open, duration_seconds=0.5)
             
             else: 
                 print(f"Chosen Final Poses (rad): {[round(angle, 3) for angle in final_target_poses]}")
