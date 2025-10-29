@@ -4,6 +4,7 @@ import time
 import pybullet_data
 import math 
 import numpy as np
+
 script_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(script_dir)
 urdf_path = os.path.join(parent_dir, 'four_dof_arm.urdf')
@@ -12,6 +13,8 @@ print(f"Final URDF Path: {urdf_path}")
 if not os.path.exists(urdf_path):
     print("Not found")
     exit()
+
+# --- PyBullet Setup ---
 physicsClient = p.connect(p.GUI) 
 p.setAdditionalSearchPath(pybullet_data.getDataPath()) 
 p.setGravity(0, 0, 0)
@@ -23,14 +26,11 @@ for i in range(p.getNumJoints(robot_arm)):
     joint_info = p.getJointInfo(robot_arm, i)
     print(f"Index {i}: Name '{joint_info[1].decode('utf-8')}', Type: {joint_info[2]}")
 
+# --- Constants ---
 EE_LINK_INDEX = 3
 LINK_RADIUS=0.05
 shelf_safety_margin=0.1
 num_joints=p.getNumJoints(robot_arm)
-#shelf_half=np.array([0.8,0.4,0.02])
-#shelf_pos=np.array([0.0, 1.1, 0.37])
-num_joints = p.getNumJoints(robot_arm)
-containers={}
 JOINT_INDICES = list(range(4))
 gripper_left=4
 gripper_right=5
@@ -39,11 +39,11 @@ gripper_open=0.03#max it can open and close basically
 gripper_close=0.00
 gripper_max_force=10.0
 length_EE = 0.10
-
 APPROACH_HEIGHT_OFFSET = 0.1
 grasped_container_id = -1
 gripper_constraint_id = -1
 
+# --- Shelf & Obstacle Setup ---
 def load_obstacle(position,half_extents,color=[0.5,0.5,0.5,1]):
     visual_shape=p.createVisualShape(p.GEOM_BOX,halfExtents=half_extents,rgbaColor=color)
     collision_shape=p.createCollisionShape(p.GEOM_BOX,halfExtents=half_extents)
@@ -83,26 +83,22 @@ shelf_z_level=[
     container_base_z+container_vertical_spacing,
     container_base_z+2*container_vertical_spacing
 ]
-'''
-inter_shelf_ids=[]
-for i , z_center in enumerate(shelf_z_level):
-    shelf_pos_z = z_center - CONTAINER_HALF_HEIGHT - INTERMEDIATE_SHELF_HALF
-    shelf_pos_i = [shelf_x_pos, shelf_y_pos, shelf_pos_z]
-    shelf_id = load_obstacle(shelf_pos_i, INTERMEDIATE_SHELF_HALF, color=[0.3, 0.3, 0.3, 0.7])
-    inter_shelf_ids.append(shelf_id)
-    print(f"Loaded Intermediate Horizontal Shelf {i+1} at: {shelf_pos_i}")
-'''
-rack_positions={
-    'C07': (-0.4, 0.9, container_base_z+0.5), 
-    'C08': (0.0, 0.9, container_base_z+0.5),
-    'C09': (0.4, 0.9, container_base_z+0.5),
-}
 
+rack_positions={
+    'C07': (-0.4, 0.9, container_base_z+0.5), # Left
+    'C08': (0.0, 0.9, container_base_z+0.5), # Center
+    'C09': (0.4, 0.9, container_base_z+0.5), # Right
+}
+# Define the order for processing containers (Fix #2)
+CONTAINER_ORDER = ['C07', 'C08', 'C09'] 
+
+# --- Arm & Movement Functions ---
 x_min_safe=-0.70
 x_max_safe=0.70
-y_app_min=0.3
+y_app_min=0.23
 y_app_max=1.8
 z_min_safe=0.1
+
 def valid_ee(joint_angles,robot_arm,ee_link):
     for j in JOINT_INDICES:
         p.resetJointState(robot_arm, j, joint_angles[j])
@@ -122,8 +118,8 @@ def valid_ee(joint_angles,robot_arm,ee_link):
         return False
         
     return True
+
 def check_collision(id,obstacle_id,dist=0.01):
-    
     for link_index in range(-1,p.getNumJoints(id)):
             for obstacle in obstacle_id:
                 closest_points=p.getClosestPoints(
@@ -138,30 +134,27 @@ def check_collision(id,obstacle_id,dist=0.01):
                         if point[8]<=dist:
                             return True
     return False
+
 def check_trajectory_collision(robot_arm,current_angles,target_angles,steps):
     original_joint_angles = np.array(current_angles)
     
-    #check for like the path 
     for i in range(steps):
         alpha = i / (steps - 1)
         interpolated_pos = original_joint_angles * (1 - alpha) + target_angles * alpha
         interpolated_pos[3] = -1 * (interpolated_pos[1] + interpolated_pos[2])
         
- 
         for joint_index in JOINT_INDICES:
             p.resetJointState(robot_arm, joint_index, interpolated_pos[joint_index])
         
         if check_collision(robot_arm, SHELF_OBSTACLE_IDS):
-
             for joint_index in JOINT_INDICES:
                 p.resetJointState(robot_arm, joint_index, original_joint_angles[joint_index])
-            return True # Collision detected
-            
+            return True 
 
     for joint_index in JOINT_INDICES:
         p.resetJointState(robot_arm, joint_index, original_joint_angles[joint_index])
+    return False
 
-    return False # No collision detected
 def execute_safe_pos(joint_target,robot_arm,duration=1.0,sim_time_per_step=1.0/240.0):
     current_joint_state=p.getJointStates(robot_arm,JOINT_INDICES)
     current_joint_angles=np.array([state[0]for state in current_joint_state])
@@ -170,9 +163,11 @@ def execute_safe_pos(joint_target,robot_arm,duration=1.0,sim_time_per_step=1.0/2
     max_force=100.0
     steps=int(duration/sim_time_per_step)
     if steps<2:steps=2
+
     if check_trajectory_collision(robot_arm,current_joint_angles,target_joint_angles,steps):
         print(f"Path has some blockage")
         return False
+
     for i in range(steps):
         alpha=i/(steps-1)
         interpolated_pos=current_joint_angles*(1-alpha)+target_joint_angles*alpha
@@ -188,11 +183,16 @@ def execute_safe_pos(joint_target,robot_arm,duration=1.0,sim_time_per_step=1.0/2
          )
         p.stepSimulation()
         time.sleep(sim_time_per_step)
-    p.stepSimulation() # Ensure final position is settled
+    
+    p.stepSimulation() 
     if check_collision(robot_arm, SHELF_OBSTACLE_IDS, dist=0.001):
         print("Final position resulted in collision.")
         return False
     return True
+
+def execute_pos(joint_target, robot_arm_id, duration_seconds=1.0, sim_time_per_step=1.0 / 240.0):
+    return execute_safe_pos(joint_target,robot_arm_id,duration_seconds,sim_time_per_step)
+
 def set_gripper_pos(robot_arm,position,duration_seconds=0.5,sim_time=1.0/240.0):
     target_position_left=position
     target_position_right = position
@@ -225,78 +225,35 @@ def container_obstacle(robot,container_id,enable=1):
             enableCollision=enable ,
         )
     print(f"Collision between Robot and Container {container_id} is {'disabled' if enable == 0 else 'enabled'}.")
-shelf_positions={
-    'Aruco_101': (-0.8, 0.0, 0.3),
-    'Aruco_102': (0.8, 0.0, 0.3),
-}
-classification_results={
-    'C01': 'Aruco_102', 
-    'C02': 'Aruco_101', 
-    'C03': 'Aruco_102',
-}
-LIFT_HEIGHT_Z=0.35
-JOINT_INDICES = list(range(4))
 
-'''
-def load_shelf(position,half_extents):
-    visual_shape = p.createVisualShape(p.GEOM_BOX, halfExtents=half_extents, rgbaColor=[2, 0.5, 0.5, 1])
-    collision_shape = p.createCollisionShape(p.GEOM_BOX, halfExtents=half_extents)
-    shelf_id = p.createMultiBody(
-        baseMass=0,
-        baseCollisionShapeIndex=collision_shape,
-        baseVisualShapeIndex=visual_shape,
-        basePosition=position,
-        baseOrientation=p.getQuaternionFromEuler([0, 0, 0])
-    )
-    print(f"Loaded shelf at location ${position}")
-    return shelf_id
-'''
 def load_container(name,position):
     container_half_extents = [0.05, 0.05, 0.05]
     color = [np.random.rand(), np.random.rand(), np.random.rand(), 1]
     visual_shape = p.createVisualShape(p.GEOM_BOX, halfExtents=container_half_extents, rgbaColor=color)
-    collision_shape = p.createCollisionShape(p.GEOM_BOX, halfExtents=container_half_extents)
-    
-    
+    # collision_shape = p.createCollisionShape(p.GEOM_BOX, halfExtents=container_half_extents) # Not used, but harmless
+
     base_z = position[2] + container_half_extents[2] 
     
     container_id = p.createMultiBody(
         baseMass=0.1, 
-        baseCollisionShapeIndex=-1,
+        baseCollisionShapeIndex=-1, # **Collision disabled for the container itself**
         baseVisualShapeIndex=visual_shape,
         basePosition=[position[0], position[1], base_z],
         baseOrientation=p.getQuaternionFromEuler([0, 0, 0])
     )
     print(f"Loaded Container {name} at: {[position[0], position[1], base_z]}")
     return container_id
-    
-def execute_pos(joint_target, robot_arm_id, duration_seconds=1.0, sim_time_per_step=1.0 / 240.0):
-    return execute_safe_pos(joint_target,robot_arm_id,duration_seconds,sim_time_per_step)
-    '''
-    Old logic without collision detection
-    num_steps = int(duration_seconds / sim_time_per_step)
-    for i in range(num_steps):
-        for joint_index in range(4):
-         p.setJointMotorControl2(
-            bodyUniqueId=robot_arm_id,
-            jointIndex=joint_index,
-            controlMode=p.POSITION_CONTROL,
-            targetPosition=joint_target[joint_index]
-         )
-        p.stepSimulation()
-        time.sleep(sim_time_per_step)
-    '''
+
+# --- Load Containers ---
+containers={}
 for name,pos in rack_positions.items():
    containers[name]=load_container(name,pos)
 
 print(f"Robot Loaded with {num_joints} joints. End-Effector Index: {EE_LINK_INDEX}")
 
+# --- Initial Position and Clearance ---
 target_pos_tip = [-0.4,0.85,0.39] 
-
-length_EE = 0.10
-
-
-target_pos_ik = [target_pos_tip[0], target_pos_tip[1], target_pos_tip[2]]
+target_pos_ik = [target_pos_tip[0], target_pos_tip[1], target_pos_tip[2]] # Using target_pos_tip here temporarily
 
 TARGET_MARKER_RADIUS = 0.02
 target_marker_visual = p.createVisualShape(
@@ -312,23 +269,29 @@ target_marker_id = p.createMultiBody(
 )
 
 clearance_pos_tip = [0.0, 0.4, 0.7] 
-clearance_pos_ik = [clearance_pos_tip[0], clearance_pos_tip[1], clearance_pos_tip[2] + length_EE]
-
-
+clearance_pos_ik = [clearance_pos_tip[0], clearance_pos_tip[1]-length_EE, clearance_pos_tip[2]]
+current_joint_state = p.getJointStates(robot_arm, JOINT_INDICES)
+current_joint_angles = [state[0] for state in current_joint_state]
 
 print(f'\nmoving to clearence pos: {clearance_pos_tip}')
 
 joint_poses_clearence_raw = p.calculateInverseKinematics(
     bodyUniqueId=robot_arm,
     endEffectorLinkIndex=EE_LINK_INDEX,
-    targetPosition=clearance_pos_ik
+    targetPosition=clearance_pos_ik,
+    # **FIX #1: Guide IK with current angles for stable initial pose**
+    restPoses=current_joint_angles, 
+    maxNumIterations=100
 ) 
+
+final_poses_clearance = None
 if joint_poses_clearence_raw:
     final_poses_clearance = np.array(joint_poses_clearence_raw[:4]) 
 
     theta2 = final_poses_clearance[1]
     theta3 = final_poses_clearance[2]
     final_poses_clearance[3] = -1 * (theta2 + theta3) 
+    
     for j in JOINT_INDICES:
        p.resetJointState(
             bodyUniqueId=robot_arm,
@@ -339,6 +302,7 @@ if joint_poses_clearence_raw:
     p.resetJointState(robot_arm, gripper_left, gripper_open, targetVelocity=0.0)
     p.resetJointState(robot_arm, gripper_right, gripper_open, targetVelocity=0.0)
     p.stepSimulation()
+    
     if not valid_ee(final_poses_clearance,robot_arm,EE_LINK_INDEX):
         print("Initial clearence violates constraints")
         p.disconnect()
@@ -354,23 +318,29 @@ else:
     p.disconnect()
     exit()
 
-
-
-#APPROACH_HEIGHT_OFFSET = 0.1
+# --- Main Pick and Place Loop (Using Ordered Targets) ---
 horizontal_approach_offset=0.15
 
-for container_name, world_pos in rack_positions.items():
-    print(f"\nStarting sequence for container: {container_name} ")
+# **FIX #2: Iterate through containers in a defined order**
+for container_name in CONTAINER_ORDER:
+    world_pos = rack_positions[container_name]
     container_id=containers[container_name]
+
+    print(f"\nStarting sequence for container: {container_name} at pos {world_pos}")
+
     set_gripper_pos(robot_arm, gripper_open, duration_seconds=0.5)
-    container_obstacle(robot_arm,container_id,enable=0)
+    # **FIX #3: Removed redundant container_obstacle(enable=0) call**
+    
+    # Calculate target positions
     target_pos_tip = [world_pos[0], world_pos[1], world_pos[2] + 0.025] 
-    target_pos_ik = [target_pos_tip[0], target_pos_tip[1]-length_EE, target_pos_tip[2]]
+    target_pos_ik = [target_pos_tip[0], target_pos_tip[1]-length_EE, target_pos_tip[2]] # Target 
     approach_pos_tip = [target_pos_tip[0], target_pos_tip[1]-horizontal_approach_offset, target_pos_tip[2]]
     approach_pos_ik = [approach_pos_tip[0], approach_pos_tip[1]-length_EE, approach_pos_tip[2]]
 
     p.resetBasePositionAndOrientation(target_marker_id, target_pos_tip, p.getQuaternionFromEuler([0, 0, 0]))
-    current_joint_state = p.getJointStates(robot_arm, range(4))
+
+    # --- APPROACH MOVE ---
+    current_joint_state = p.getJointStates(robot_arm, JOINT_INDICES)
     current_joint_angles = [state[0] for state in current_joint_state]
     current_joint_angles_np = np.array(current_joint_angles)
     
@@ -379,7 +349,10 @@ for container_name, world_pos in rack_positions.items():
     joint_poses_approach_raw = p.calculateInverseKinematics(
         bodyUniqueId=robot_arm,
         endEffectorLinkIndex=EE_LINK_INDEX,
-        targetPosition=approach_pos_ik
+        targetPosition=approach_pos_ik,
+        # **FIX #1: Guide IK with current joint state**
+        restPoses=current_joint_angles, 
+        maxNumIterations=100
     )
 
     final_approach_poses = None
@@ -388,10 +361,12 @@ for container_name, world_pos in rack_positions.items():
         theta2 = final_approach_poses[1]
         theta3 = final_approach_poses[2]
         final_approach_poses[3] = -1 * (theta2 + theta3) 
+        
         if not valid_ee(final_approach_poses,robot_arm,EE_LINK_INDEX):
-            print("Contraints have been violated in this path")
+            print("Contraints have been violated in this path. Returning to clearance.")
             if final_poses_clearance is not None: execute_pos(final_poses_clearance, robot_arm, duration_seconds=1.0)
             continue
+            
         print(f"Chosen Approach Poses (rad): {[round(angle, 3) for angle in final_approach_poses]}")
 
         if not execute_pos(final_approach_poses, robot_arm, duration_seconds=1.5):
@@ -403,30 +378,40 @@ for container_name, world_pos in rack_positions.items():
         if final_poses_clearance is not None:
             execute_pos(final_poses_clearance, robot_arm, duration_seconds=2.0)
         continue
+
+    # --- FINAL TARGET MOVE (Grasp Point) ---
     final_target_poses = None
     if final_approach_poses is not None:
-        current_joint_angles_np = final_approach_poses
+        current_joint_angles_np = final_approach_poses # Use successful approach pose as rest pose
         
         print(f"\nmoving to final target position:{target_pos_tip}")
         
-
         joint_poses_final_raw = p.calculateInverseKinematics(
             bodyUniqueId=robot_arm,
             endEffectorLinkIndex=EE_LINK_INDEX,
-            targetPosition=target_pos_ik
+            targetPosition=target_pos_ik,
+            # **FIX #1: Guide IK with the successful approach pose**
+            restPoses=current_joint_angles_np,
+            maxNumIterations=100
         )
         
         if joint_poses_final_raw:
             final_target_poses = np.array(joint_poses_final_raw[:4])
             theta2_final = final_target_poses[1]
             theta3_final = final_target_poses[2]
-            theta4_required = -1 * (theta2_final + theta3_final)
-            final_target_poses[3] = theta4_required 
+            final_target_poses[3] = -1 * (theta2_final + theta3_final) 
+            
             if not valid_ee(final_target_poses, robot_arm, EE_LINK_INDEX):
                 print("Final Target Pose violates spatial constraints. Skipping.")
                 if final_poses_clearance is not None:
                     execute_pos(final_poses_clearance,robot_arm ,duration_seconds=1.0)
-                    continue
+                continue
+                
+            print(f"Chosen Final Poses (rad): {[round(angle, 3) for angle in final_target_poses]}")
+            print("\nExecuting movement to selected IK target")
+            
+            if execute_pos(final_target_poses, robot_arm, duration_seconds=1.0):
+                # --- GRASP ---
                 print('Holding container')
                 set_gripper_pos(robot_arm,gripper_close,duration_seconds=1.0)
                 gripper_constraint_id = p.createConstraint(
@@ -440,27 +425,25 @@ for container_name, world_pos in rack_positions.items():
                 childFramePosition=[0, 0, 0])
                 grasped_container_id=container_id
                 print(f'Container {container_name} is caught')
-                if final_poses_clearance is not None:
-                    execute_pos(final_poses_clearance,robot_arm,duration_seconds=2.0)
-                if gripper_constraint_id != -1:
-                 print(f"releasing the container{container_name} ")
-                 p.removeConstraint(gripper_constraint_id)
-                 gripper_constraint_id = -1
-                 grasped_container_id = -1
-                set_gripper_pos(robot_arm, gripper_open, duration_seconds=0.5)
-            
-            else: 
-                print(f"Chosen Final Poses (rad): {[round(angle, 3) for angle in final_target_poses]}")
-                print("\nExecuting movement to selected IK target")
-                if not execute_pos(final_target_poses, robot_arm, duration_seconds=1.0):
-                    print("Final Target Move FAILED due to path collision.")
+            else:
+                print("Final Target Move FAILED due to path collision.")
            
-            
         else:
-           print("Final Target out of reach .")
+           print("Final Target out of reach or no solution found.")
+           
+    # --- RETURN TO CLEARANCE ---
     print(f"\nReturning to safe clearence pos: {clearance_pos_tip}")
     if final_poses_clearance is not None:
+        # Move up/back to clearance with container attached
         execute_pos(final_poses_clearance, robot_arm, duration_seconds=2.0)
+    
+    # --- RELEASE (if grasped) ---
+    if gripper_constraint_id != -1:
+         print(f"releasing the container {container_name} ")
+         p.removeConstraint(gripper_constraint_id)
+         gripper_constraint_id = -1
+         grasped_container_id = -1
+    set_gripper_pos(robot_arm, gripper_open, duration_seconds=0.5)
     
     print(f"Finished sequence for container: {container_name}")
 

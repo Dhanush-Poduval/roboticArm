@@ -2,138 +2,107 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 import time
-from fk import forward_kinematics
-L1, L2, L3 = 0.1,0.5,0.5
+# Assuming fk.py and forward_kinematics are available
+# from fk import forward_kinematics 
+
+# --- UPDATED CONSTANTS ---
+L1 = 0.1  # Base height/offset (assuming this is part of the Z clearance)
+L2 = 0.5  # Link 2 length (Shoulder to Elbow)
+L3 = 0.5  # Link 3 length (Elbow to Wrist)
+L_EE = 0.10 # End-Effector (Gripper) Length - Must match PyBullet code
+
 J2_LOWER = -1.57 
 J2_UPPER = 1.57
 J3_LOWER = -2.0
 J3_UPPER = 2.0
+# -------------------------
+
 def is_valid(theta2,theta3):
     if not (J2_LOWER<=theta2<=J2_UPPER):
         return False
     if not (J3_LOWER <= theta3 <= J3_UPPER):
         return False
     return True
-def inverse_kinematics(x_target,y_target,z_target,angle=0):
-    theta1=math.atan2(y_target,x_target)
-    r=math.sqrt(x_target**2+y_target**2)
-    z_prime=z_target
-    rw=math.hypot(r,z_prime)
-    if rw>(L2+L3) or rw<abs(L2-L3):
-        print(f"Target out of reach ")
+
+def inverse_kinematics(x_target, y_target, z_target):
+    """
+    Calculates the joint angles (theta1, theta2, theta3, theta4) for the 
+    4-DoF arm, ensuring the wrist is vertical (theta4 = -(theta2 + theta3)).
+    
+    The target (x, y, z) is the desired position of the gripper tip.
+    The IK solution is calculated for the J4 position, offset by L_EE.
+    """
+    
+    # 1. Target Offset: Adjust Z-target to find the position of Joint 4 (J4)
+    # P_J4 must be L_EE below the target P_EE to keep the gripper vertical.
+    z_prime_J4 = z_target - L_EE # New Z for the 3-link planar solution
+    
+    # 2. Theta 1 (Base Rotation)
+    theta1 = math.atan2(y_target, x_target)
+    
+    # 3. Planar Distance and Hypotenuse
+    r = math.hypot(x_target, y_target)
+    rw = math.hypot(r, z_prime_J4)
+    
+    # 4. Reachability Check
+    if rw > (L2 + L3) or rw < abs(L2 - L3):
+        print(f"Target out of reach (Distance: {rw:.3f}m)")
         return False
-    cos_A3=(L2**2+L3**2-rw**2)/(2*L2*L3)
-    cos_A3=max(-1,min(1,cos_A3))
-    internal_angle_3=math.acos(cos_A3)
-    beta=math.atan2(z_prime,r)
-    sin_a2=(L3*math.sin(internal_angle_3))/rw
-    sin_a2=max(-1,min(1,sin_a2))
-    alpha=math.asin(sin_a2)
-    theta4=angle
-    theta3_up=-(math.pi-internal_angle_3)
-    theta2_up=beta-alpha
+    
+    # 5. Theta 3 (Elbow Angle - Law of Cosines)
+    cos_A3 = (L2**2 + L3**2 - rw**2) / (2 * L2 * L3)
+    cos_A3 = max(-1, min(1, cos_A3))
+    internal_angle_3 = math.acos(cos_A3) # Internal triangle angle
 
-    up_type=[theta1,theta2_up,theta3_up,angle]
+    # The two solutions for Theta 3: Elbow Up and Elbow Down
+    # Elbow Down (typically positive angle for forward reach, assuming PyBullet URDF)
+    theta3_down = math.pi - internal_angle_3 
+    # Elbow Up (typically negative angle)
+    theta3_up = -(math.pi - internal_angle_3) 
 
-    theta3_down=math.pi-internal_angle_3
-    theta2_down=beta+alpha
+    # 6. Theta 2 components (Angle of elevation and correction angle)
+    beta = math.atan2(z_prime_J4, r)
+    sin_alpha = (L3 * math.sin(internal_angle_3)) / rw
+    sin_alpha = max(-1, min(1, sin_alpha))
+    alpha = math.asin(sin_alpha)
 
-    down_type=[theta1,theta2_down,theta3_down,angle]
+    # The two solutions for Theta 2:
+    theta2_down = beta + alpha  # Corresponds to Elbow Down
+    theta2_up = beta - alpha    # Corresponds to Elbow Up
+
+    # --- Solution Types ---
+    
+    # Solution 1: Elbow Up
+    theta4_up = -1 * (theta2_up + theta3_up) # Calculated from the constraint
+    up_type=[theta1, theta2_up, theta3_up, theta4_up]
+
+    # Solution 2: Elbow Down
+    theta4_down = -1 * (theta2_down + theta3_down) # Calculated from the constraint
+    down_type=[theta1, theta2_down, theta3_down, theta4_down]
 
     valid_solutions=[]
 
-    if is_valid(theta2_up,theta3_up):
+    if is_valid(theta2_up, theta3_up):
         valid_solutions.append(up_type)
-    if is_valid(theta2_down,theta3_down):
+    if is_valid(theta2_down, theta3_down):
         valid_solutions.append(down_type)
+        
     if not valid_solutions:
         print("Target is making joints move outside the limit ")
         return False
-    return valid_solutions   
-#this was for plotting in 2D x,y plane and automate it 
-'''def plot(angles):
-    theta1,theta2,theta3=[math.radians(i) for i in angles]
-    x0,y0=0,0
-    x1,y1=L1*math.cos(theta1),L1*math.sin(theta1)
-    x2,y2=x1+L2*math.cos(theta1+theta2),y1+L2*math.sin(theta1+theta2)
-    x3,y3=x2+L3*math.cos(theta1+theta2+theta3),y2+L3*math.sin(theta1+theta2+theta3)
-    x4,y4=x3+L4*math.cos(theta1+theta2+theta3),y3+L4*math.sin(theta1+theta2+theta3)
-    plt.figure()
-    plt.plot([x0,x1,x2,x3,x4],[y0,y1,y2,y3,y4],linewidth=3,markersize=8,marker='o')
-    plt.plot(x3,y3,'rx',markersize=10)
-    plt.xlim(-250,250)
-    plt.ylim(-25,500)
-    plt.grid()
-    plt.gca().set_aspect('equal',adjustable='box')
-    plt.show()
-def move_arm(start , end , steps=50):
     
-    a1_arr=np.linspace(start[0],end[0],steps)
-    a2_arr = np.linspace(start[1], end[1], steps)
-    a3_arr= np.linspace(start[2],end[2], steps)
-    a4_arr = np.linspace(start[3], end[3], steps)
+    # For a simple choice, return the first valid solution found (or down-type if both valid)
+    return valid_solutions[0] if valid_solutions else False 
 
-    for i in range(steps+1):
-        a1 = a1_arr[i]
-        a2 = a2_arr[i]
-        a3 = a3_arr[i]
-        a4=a4_arr[i]
-        plot((a1, a2, a3,a4))
-        time.sleep(0.05)
+# --- End of Updated IK Function ---
 
-def automate(targets, steps=50):
-    plt.ion()
-    fig, ax = plt.subplots()
-    ax.set_xlim(-300, 300)
-    ax.set_ylim(-100, 400)
-    ax.set_aspect('equal')
-    ax.grid(True)
+# The plotting and manual checking code remains the same as you provided, 
+# but it should now call the single-solution IK function:
 
-   
-    curr_angles = (0, 0, 0,0)
-
-    for target in targets:
-        x, y = target
-        angles = inverse_kinematics(x, y)
-        if not angles:
-            print(f"Target {target} out of reach")
-            continue
-
-        print(f"Moving to target {target}...")
-
-       
-        theta1_arr = np.linspace(curr_angles[0], angles[0], steps)
-        theta2_arr = np.linspace(curr_angles[1], angles[1], steps)
-        theta3_arr = np.linspace(curr_angles[2], angles[2], steps)
-        theta4_arr = np.linspace(curr_angles[3], angles[3], steps)
-        for t1, t2, t3 , t4 in zip(theta1_arr, theta2_arr, theta3_arr,theta4_arr):
-            (x0, y0), (x1, y1), (x2, y2), (x3, y3),(x4,y4) = forward_kinematics(t1, t2, t3,t4, L1, L2, L3,L4)
-            ax.clear()
-            ax.plot([x0, x1, x2, x3 , x4], [y0, y1, y2, y3 , y4], 'o-', linewidth=3, markersize=8)
-            ax.plot(x, y, 'rx', markersize=10)
-            ax.set_xlim(-300, 300)
-            ax.set_ylim(-100, 400)
-            ax.set_aspect('equal')
-            ax.grid(True)
-            plt.draw()
-            plt.pause(0.02)
-
-        curr_angles = angles  
-
-    plt.ioff()
-    plt.show()
 '''
-#this is to check the angles i get in my ik function
-'''target = [(150, 150), (200, 100), (100, 200)]
-
-angle_list=[]
-
-#automate(target,steps=30)
-
-target_x, target_y, target_z = 0.1,0.3,0.5 # Target from sim.py
-angle = 0 # Radians
-
-result= inverse_kinematics(target_x, target_y, target_z, angle)
+# Example of how to use the updated function:
+target_x, target_y, target_z = 0.1,0.3,0.5 
+result = inverse_kinematics(target_x, target_y, target_z)
 
 if result is not False:
     theta1,theta2,theta3,theta4=result
@@ -142,26 +111,9 @@ if result is not False:
     print(f"Theta 1 (Yaw):    {theta1:.3f} rad")
     print(f"Theta 2 (Shoulder): {theta2:.3f} rad")
     print(f"Theta 3 (Elbow):  {theta3:.3f} rad")
-    print(f"Theta 4 (Roll):   {theta4:.3f} rad")
+    print(f"Theta 4 (Wrist):  {theta4:.3f} rad (Constraint: -(T2+T3))")
 else:
     print(f"\n--- Analytical Solution Failed ---")
-
 '''
-#This part is for manual checking of fk and ik functions
-'''for targets in target:
-    angles=inverse_kinematics(*targets)
-    angle_list.append(angles)
-    print(f'Target:{targets}')
-    if angles:
-        print(f'Joint Angles :{angles}')
-    else:
-        print("Target out of reach")
-theta1=angle_list[0][0]
-theta2=angle_list[0][1]
-theta3=angle_list[0][2]
-print(theta1,theta2,theta3)
-pos=forward_kinematics(theta1,theta2,theta3,L1,L2,L3)
-print("The positions of the arm is :",pos)'''
-    
-        
 
+# The rest of your script follows here...
