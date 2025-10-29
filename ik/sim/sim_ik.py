@@ -269,7 +269,7 @@ def load_container(name,position):
     
     container_id = p.createMultiBody(
         baseMass=0.1, 
-        baseCollisionShapeIndex=-1,
+        baseCollisionShapeIndex=collision_shape,
         baseVisualShapeIndex=visual_shape,
         basePosition=[position[0], position[1], base_z],
         baseOrientation=p.getQuaternionFromEuler([0, 0, 0])
@@ -447,31 +447,34 @@ for container_name, world_pos in rack_positions.items():
                 if final_poses_clearance is not None:
                     execute_pos(final_poses_clearance,robot_arm ,duration_seconds=1.0)
                     continue
-                print('Holding container')
-                set_gripper_pos(robot_arm,gripper_close,duration_seconds=1.0)
-                gripper_constraint_id = p.createConstraint(
-                parentBodyUniqueId=robot_arm,
-                parentLinkIndex=EE_LINK_INDEX, 
-                childBodyUniqueId=container_id,
-                childLinkIndex=-1,
-                jointType=p.JOINT_FIXED,
-                jointAxis=[0, 0, 0],
-                parentFramePosition=[0, 0, 0],
-                childFramePosition=[0, 0, 0])
-                grasped_container_id=container_id
-                print(f'Container {container_name} is caught')
-                if final_poses_clearance is not None:
-                    execute_pos(final_poses_clearance,robot_arm,duration_seconds=2.0)
-                if gripper_constraint_id != -1:
-                 print(f"releasing the container{container_name} ")
-                 p.removeConstraint(gripper_constraint_id)
-                 gripper_constraint_id = -1
-                 grasped_container_id = -1
-                set_gripper_pos(robot_arm, gripper_open, duration_seconds=0.5)
-            
+               
+                
             else: 
                 print(f"Chosen Final Poses (rad): {[round(angle, 3) for angle in final_target_poses]}")
                 print("\nExecuting movement to selected IK target")
+                if  execute_pos(final_poses_clearance,robot_arm ,duration_seconds=1.0):
+
+                    print('Holding container')
+                    set_gripper_pos(robot_arm,gripper_close,duration_seconds=1.0)
+                    gripper_constraint_id = p.createConstraint(
+                    parentBodyUniqueId=robot_arm,
+                    parentLinkIndex=EE_LINK_INDEX, 
+                    childBodyUniqueId=container_id,
+                    childLinkIndex=-1,
+                    jointType=p.JOINT_FIXED,
+                    jointAxis=[0, 0, 0],
+                    parentFramePosition=[0, 0, 0],
+                    childFramePosition=[0, 0, 0])
+                    grasped_container_id=container_id
+                    print(f'Container {container_name} is caught')
+                    if final_poses_clearance is not None:
+                        execute_pos(final_poses_clearance,robot_arm,duration_seconds=2.0)
+                    if gripper_constraint_id != -1:
+                        print(f"releasing the container{container_name} ")
+                        p.removeConstraint(gripper_constraint_id)
+                        gripper_constraint_id = -1
+                        grasped_container_id = -1
+                        set_gripper_pos(robot_arm, gripper_open, duration_seconds=0.5)
                 if not execute_pos(final_target_poses, robot_arm, duration_seconds=1.0):
                     print("Final Target Move FAILED due to path collision.")
            
