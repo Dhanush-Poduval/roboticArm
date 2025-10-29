@@ -35,10 +35,17 @@ JOINT_INDICES = list(range(4))
 gripper_left=4
 gripper_right=5
 griper_join_indices=[gripper_left,gripper_right]
-gripper_open=0.03#max it can open and close basically
+#max it can open and close basically
+gripper_open=0.03
 gripper_close=0.00
 gripper_max_force=10.0
 length_EE = 0.10
+joint_infos = [p.getJointInfo(robot_arm, i) for i in range(p.getNumJoints(robot_arm))]
+DEFAULT_LOWER_LIMITS = [info[8] for info in joint_infos]
+DEFAULT_UPPER_LIMITS = [info[9] for info in joint_infos]
+JOINT_RANGES = [info[10] for info in joint_infos]
+JOINT_DAMPING = [0.01] * p.getNumJoints(robot_arm)
+JOINT_0_INDEX = 0 
 
 APPROACH_HEIGHT_OFFSET = 0.1
 grasped_container_id = -1
@@ -166,8 +173,8 @@ def execute_safe_pos(joint_target,robot_arm,duration=1.0,sim_time_per_step=1.0/2
     current_joint_state=p.getJointStates(robot_arm,JOINT_INDICES)
     current_joint_angles=np.array([state[0]for state in current_joint_state])
     target_joint_angles=np.array(joint_target)
-    max_v=3.0
-    max_force=100.0
+    max_v=0.8          
+    max_force=15.0     
     steps=int(duration/sim_time_per_step)
     if steps<2:steps=2
     if check_trajectory_collision(robot_arm,current_joint_angles,target_joint_angles,steps):
@@ -184,11 +191,11 @@ def execute_safe_pos(joint_target,robot_arm,duration=1.0,sim_time_per_step=1.0/2
             controlMode=p.POSITION_CONTROL,
             targetPosition=interpolated_pos[joint_index],
             maxVelocity=max_v,
-            force=max_force
+            force=max_force 
          )
         p.stepSimulation()
         time.sleep(sim_time_per_step)
-    p.stepSimulation() # Ensure final position is settled
+    p.stepSimulation() 
     if check_collision(robot_arm, SHELF_OBSTACLE_IDS, dist=0.001):
         print("Final position resulted in collision.")
         return False
@@ -272,20 +279,7 @@ def load_container(name,position):
     
 def execute_pos(joint_target, robot_arm_id, duration_seconds=1.0, sim_time_per_step=1.0 / 240.0):
     return execute_safe_pos(joint_target,robot_arm_id,duration_seconds,sim_time_per_step)
-    '''
-    Old logic without collision detection
-    num_steps = int(duration_seconds / sim_time_per_step)
-    for i in range(num_steps):
-        for joint_index in range(4):
-         p.setJointMotorControl2(
-            bodyUniqueId=robot_arm_id,
-            jointIndex=joint_index,
-            controlMode=p.POSITION_CONTROL,
-            targetPosition=joint_target[joint_index]
-         )
-        p.stepSimulation()
-        time.sleep(sim_time_per_step)
-    '''
+
 for name,pos in rack_positions.items():
    containers[name]=load_container(name,pos)
 
@@ -313,16 +307,16 @@ target_marker_id = p.createMultiBody(
 
 clearance_pos_tip = [0.0, 0.4, 0.7] 
 clearance_pos_ik = [clearance_pos_tip[0], clearance_pos_tip[1], clearance_pos_tip[2] + length_EE]
-
+current_joint_angles = [state[0] for state in p.getJointStates(robot_arm, JOINT_INDICES)]
 
 
 print(f'\nmoving to clearence pos: {clearance_pos_tip}')
 
 joint_poses_clearence_raw = p.calculateInverseKinematics(
-    bodyUniqueId=robot_arm,
-    endEffectorLinkIndex=EE_LINK_INDEX,
-    targetPosition=clearance_pos_ik
-) 
+    bodyUniqueId=robot_arm, endEffectorLinkIndex=EE_LINK_INDEX, targetPosition=clearance_pos_ik,
+    restPoses=current_joint_angles, maxNumIterations=100,
+    jointDamping=JOINT_DAMPING, lowerLimits=DEFAULT_LOWER_LIMITS, upperLimits=DEFAULT_UPPER_LIMITS, jointRanges=JOINT_RANGES
+)
 if joint_poses_clearence_raw:
     final_poses_clearance = np.array(joint_poses_clearence_raw[:4]) 
 
@@ -345,7 +339,8 @@ if joint_poses_clearence_raw:
         exit()
     
     print(f"Calculated Clearance Poses (rad): {[round(angle, 3) for angle in final_poses_clearance]}")
-    if not  execute_pos(final_poses_clearance, robot_arm, duration_seconds=0.1):
+    
+    if not  execute_pos(final_poses_clearance, robot_arm, duration_seconds=1.0): 
         print("Fail due to path collision")
         p.disconnect()
         exit()
@@ -373,13 +368,32 @@ for container_name, world_pos in rack_positions.items():
     current_joint_state = p.getJointStates(robot_arm, range(4))
     current_joint_angles = [state[0] for state in current_joint_state]
     current_joint_angles_np = np.array(current_joint_angles)
+    #this is for smoothening movement
+    temp_ll = DEFAULT_LOWER_LIMITS.copy() 
+    temp_ul = DEFAULT_UPPER_LIMITS.copy()
     
-    print(f"\nmoving to approach position:{approach_pos_tip}")
+    if container_name == 'C07': 
+        temp_ll[JOINT_0_INDEX] = -1.5 
+        temp_ul[JOINT_0_INDEX] = 0.5 
+    elif container_name == 'C09': 
+        temp_ll[JOINT_0_INDEX] = -0.5 
+        temp_ul[JOINT_0_INDEX] = 1.5
+    else:
+        temp_ll[JOINT_0_INDEX] = -0.8
+        temp_ul[JOINT_0_INDEX] = 0.8
+   
 
+    print(f"\nmoving to approach position:{approach_pos_tip}")
     joint_poses_approach_raw = p.calculateInverseKinematics(
         bodyUniqueId=robot_arm,
         endEffectorLinkIndex=EE_LINK_INDEX,
-        targetPosition=approach_pos_ik
+        targetPosition=approach_pos_ik,
+        restPoses=current_joint_angles, 
+        maxNumIterations=100,
+        jointDamping=JOINT_DAMPING,
+        lowerLimits=temp_ll,      
+        upperLimits=temp_ul,      
+        jointRanges=JOINT_RANGES
     )
 
     final_approach_poses = None
@@ -413,7 +427,13 @@ for container_name, world_pos in rack_positions.items():
         joint_poses_final_raw = p.calculateInverseKinematics(
             bodyUniqueId=robot_arm,
             endEffectorLinkIndex=EE_LINK_INDEX,
-            targetPosition=target_pos_ik
+            targetPosition=target_pos_ik,
+            restPoses=current_joint_angles_np,
+            maxNumIterations=100,
+            jointDamping=JOINT_DAMPING, 
+            lowerLimits=temp_ll,    
+            upperLimits=temp_ul,     
+            jointRanges=JOINT_RANGES
         )
         
         if joint_poses_final_raw:
