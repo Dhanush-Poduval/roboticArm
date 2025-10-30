@@ -452,7 +452,7 @@ for container_name, world_pos in rack_positions.items():
             else: 
                 print(f"Chosen Final Poses (rad): {[round(angle, 3) for angle in final_target_poses]}")
                 print("\nExecuting movement to selected IK target")
-                if  not execute_pos(final_poses_clearance,robot_arm ,duration_seconds=1.0):
+                if  not execute_pos(final_target_poses,robot_arm ,duration_seconds=1.0):
                     print("Final Target move failed due to path collision")
                     if final_poses_clearance is not None:
                         execute_pos(final_poses_clearance,robot_arm,duration_seconds=1.0)
