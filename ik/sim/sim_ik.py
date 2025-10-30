@@ -452,10 +452,16 @@ for container_name, world_pos in rack_positions.items():
             else: 
                 print(f"Chosen Final Poses (rad): {[round(angle, 3) for angle in final_target_poses]}")
                 print("\nExecuting movement to selected IK target")
-                if  execute_pos(final_poses_clearance,robot_arm ,duration_seconds=1.0):
-
-                    print('Holding container')
+                if  not execute_pos(final_poses_clearance,robot_arm ,duration_seconds=1.0):
+                    print("Final Target move failed due to path collision")
+                    if final_poses_clearance is not None:
+                        execute_pos(final_poses_clearance,robot_arm,duration_seconds=1.0)
+                        continue
+                    print('Holding the container')
                     set_gripper_pos(robot_arm,gripper_close,duration_seconds=1.0)
+                    if gripper_constraint_id !=-1:
+                        p.removeConstraint(gripper_constraint_id)
+                    
                     gripper_constraint_id = p.createConstraint(
                     parentBodyUniqueId=robot_arm,
                     parentLinkIndex=EE_LINK_INDEX, 
@@ -467,16 +473,30 @@ for container_name, world_pos in rack_positions.items():
                     childFramePosition=[0, 0, 0])
                     grasped_container_id=container_id
                     print(f'Container {container_name} is caught')
-                    if final_poses_clearance is not None:
-                        execute_pos(final_poses_clearance,robot_arm,duration_seconds=2.0)
+                    current_ee_pos,_=p.getLinkState(robot_arm,EE_LINK_INDEX)[:2]
+                    lift_pos_tip = [current_ee_pos[0], current_ee_pos[1], current_ee_pos[2] + APPROACH_HEIGHT_OFFSET] 
+                    lift_pos_ik = [lift_pos_tip[0], lift_pos_tip[1] - length_EE, lift_pos_tip[2]]
+                    joint_poses_lift_raw = p.calculateInverseKinematics(
+                    bodyUniqueId=robot_arm, endEffectorLinkIndex=EE_LINK_INDEX, targetPosition=lift_pos_ik,
+                    restPoses=final_target_poses, maxNumIterations=100, jointDamping=JOINT_DAMPING,
+                    lowerLimits=DEFAULT_LOWER_LIMITS, upperLimits=DEFAULT_UPPER_LIMITS, jointRanges=JOINT_RANGES)
+
+                    if joint_poses_lift_raw:
+                        final_lift_poses = np.array(joint_poses_lift_raw[:4])
+                        final_lift_poses[3] = -1 * (final_lift_poses[1] + final_lift_poses[2])
+                        print(f"\nLifting container to: {lift_pos_tip}")
+                        execute_pos(final_lift_poses, robot_arm, duration_seconds=1.0)
+                    '''
                     if gripper_constraint_id != -1:
                         print(f"releasing the container{container_name} ")
                         p.removeConstraint(gripper_constraint_id)
                         gripper_constraint_id = -1
                         grasped_container_id = -1
                         set_gripper_pos(robot_arm, gripper_open, duration_seconds=0.5)
-                if not execute_pos(final_target_poses, robot_arm, duration_seconds=1.0):
-                    print("Final Target Move FAILED due to path collision.")
+                    '''
+                # if not execute_pos(final_target_poses, robot_arm, duration_seconds=1.0):
+                    # print("Final Target Move FAILED due to path collision.")
+                
            
             
         else:
@@ -484,6 +504,13 @@ for container_name, world_pos in rack_positions.items():
     print(f"\nReturning to safe clearence pos: {clearance_pos_tip}")
     if final_poses_clearance is not None:
         execute_pos(final_poses_clearance, robot_arm, duration_seconds=2.0)
+        if grasped_container_id != -1 and gripper_constraint_id != -1:
+             print(f"Releasing container {container_name} at clearance position (Temporary Release)")
+             p.removeConstraint(gripper_constraint_id)
+             gripper_constraint_id = -1
+             grasped_container_id = -1
+             set_gripper_pos(robot_arm, gripper_open, duration_seconds=0.5)
+             container_obstacle(robot_arm, container_id, enable=1)
     
     print(f"Finished sequence for container: {container_name}")
 
