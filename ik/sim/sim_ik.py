@@ -90,6 +90,19 @@ shelf_z_level=[
     container_base_z+container_vertical_spacing,
     container_base_z+2*container_vertical_spacing
 ]
+
+dest_shelf_thickness=0.03
+dest_shelf_height=0.4
+dest_shelf_width=0.5
+dest_shelf_depth=0.4
+
+dest_shelf_pos=np.array([-0.8,0.0,0.0])
+dest_shelf_floor_half = [dest_shelf_width / 2, dest_shelf_depth / 2, dest_shelf_thickness / 2]
+dest_shelf_floor_pos = [dest_shelf_pos[0], dest_shelf_pos[1], dest_shelf_pos[2] + dest_shelf_thickness / 2]
+dest_shelf_floor_id = load_obstacle(dest_shelf_floor_pos, dest_shelf_floor_half, color=[0.2, 0.6, 0.2, 0.7])
+#this is just to tell the container to drop a little above the shelf surface
+drop_pos = [dest_shelf_pos[0], dest_shelf_pos[1], dest_shelf_floor_pos[2] + dest_shelf_floor_half[2] + 0.05] 
+print(f"Loaded Destination Shelf at: {dest_shelf_floor_pos}. Drop target placeholder at: {drop_pos}")
 '''
 inter_shelf_ids=[]
 for i , z_center in enumerate(shelf_z_level):
