@@ -456,36 +456,36 @@ for container_name, world_pos in rack_positions.items():
                     print("Final Target move failed due to path collision")
                     if final_poses_clearance is not None:
                         execute_pos(final_poses_clearance,robot_arm,duration_seconds=1.0)
-                        continue
-                    print('Holding the container')
-                    set_gripper_pos(robot_arm,gripper_close,duration_seconds=1.0)
-                    if gripper_constraint_id !=-1:
-                        p.removeConstraint(gripper_constraint_id)
-                    
-                    gripper_constraint_id = p.createConstraint(
-                    parentBodyUniqueId=robot_arm,
-                    parentLinkIndex=EE_LINK_INDEX, 
-                    childBodyUniqueId=container_id,
-                    childLinkIndex=-1,
-                    jointType=p.JOINT_FIXED,
-                    jointAxis=[0, 0, 0],
-                    parentFramePosition=[0, 0, 0],
-                    childFramePosition=[0, 0, 0])
-                    grasped_container_id=container_id
-                    print(f'Container {container_name} is caught')
-                    current_ee_pos,_=p.getLinkState(robot_arm,EE_LINK_INDEX)[:2]
-                    lift_pos_tip = [current_ee_pos[0], current_ee_pos[1], current_ee_pos[2] + APPROACH_HEIGHT_OFFSET] 
-                    lift_pos_ik = [lift_pos_tip[0], lift_pos_tip[1] - length_EE, lift_pos_tip[2]]
-                    joint_poses_lift_raw = p.calculateInverseKinematics(
-                    bodyUniqueId=robot_arm, endEffectorLinkIndex=EE_LINK_INDEX, targetPosition=lift_pos_ik,
-                    restPoses=final_target_poses, maxNumIterations=100, jointDamping=JOINT_DAMPING,
-                    lowerLimits=DEFAULT_LOWER_LIMITS, upperLimits=DEFAULT_UPPER_LIMITS, jointRanges=JOINT_RANGES)
+                    continue
+                print('Holding the container')
+                set_gripper_pos(robot_arm,gripper_close,duration_seconds=1.0)
+                if gripper_constraint_id !=-1:
+                    p.removeConstraint(gripper_constraint_id)
+                
+                gripper_constraint_id = p.createConstraint(
+                parentBodyUniqueId=robot_arm,
+                parentLinkIndex=EE_LINK_INDEX, 
+                childBodyUniqueId=container_id,
+                childLinkIndex=-1,
+                jointType=p.JOINT_FIXED,
+                jointAxis=[0, 0, 0],
+                parentFramePosition=[0, 0, 0],
+                childFramePosition=[0, 0, 0])
+                grasped_container_id=container_id
+                print(f'Container {container_name} is caught')
+                current_ee_pos,_=p.getLinkState(robot_arm,EE_LINK_INDEX)[:2]
+                lift_pos_tip = [current_ee_pos[0], current_ee_pos[1], current_ee_pos[2] + APPROACH_HEIGHT_OFFSET] 
+                lift_pos_ik = [lift_pos_tip[0], lift_pos_tip[1] - length_EE, lift_pos_tip[2]]
+                joint_poses_lift_raw = p.calculateInverseKinematics(
+                bodyUniqueId=robot_arm, endEffectorLinkIndex=EE_LINK_INDEX, targetPosition=lift_pos_ik,
+                restPoses=final_target_poses, maxNumIterations=100, jointDamping=JOINT_DAMPING,
+                lowerLimits=DEFAULT_LOWER_LIMITS, upperLimits=DEFAULT_UPPER_LIMITS, jointRanges=JOINT_RANGES)
 
-                    if joint_poses_lift_raw:
-                        final_lift_poses = np.array(joint_poses_lift_raw[:4])
-                        final_lift_poses[3] = -1 * (final_lift_poses[1] + final_lift_poses[2])
-                        print(f"\nLifting container to: {lift_pos_tip}")
-                        execute_pos(final_lift_poses, robot_arm, duration_seconds=1.0)
+                if joint_poses_lift_raw:
+                    final_lift_poses = np.array(joint_poses_lift_raw[:4])
+                    final_lift_poses[3] = -1 * (final_lift_poses[1] + final_lift_poses[2])
+                    print(f"\nLifting container to: {lift_pos_tip}")
+                    execute_pos(final_lift_poses, robot_arm, duration_seconds=1.0)
                     '''
                     if gripper_constraint_id != -1:
                         print(f"releasing the container{container_name} ")
