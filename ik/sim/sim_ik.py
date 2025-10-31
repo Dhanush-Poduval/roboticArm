@@ -522,15 +522,26 @@ for container_name, world_pos in rack_positions.items():
     print(f"\nReturning to safe clearence pos: {clearance_pos_tip}")
     if final_poses_clearance is not None:
         execute_pos(final_poses_clearance, robot_arm, duration_seconds=2.0)
-        '''
+        
         for target_container_name , target_shelf_pos in target_shelf.items():
+            dest_shelf_pose=[target_shelf_pos[0],target_shelf_pos[1],target_shelf_pos[2]+0.25]
             print(f"Moving the arm to the required target position {target_container_name}")
             target_position_shelf=p.calculateInverseKinematics(
                 robot_arm_id=robot_arm,
                 endEffectorLinkIndex=EE_LINK_INDEX,
-
+                targetPosition=dest_shelf_pose,
+                maxNumIterations=100,
+                jointDamping=JOINT_DAMPING,
+                jointRanges=JOINT_RANGES
             )
-     '''
+            if target_position_shelf is not None:
+                final_dest_shelf_position=np.array(target_position_shelf[:4])
+                angle2=final_dest_shelf_position[1]
+                angle3=final_dest_shelf_position[2]
+                angle4=-1*(angle3+angle2)
+                final_dest_shelf_position[3]=angle4
+                
+    
 
         if grasped_container_id != -1 and gripper_constraint_id != -1:
              print(f"Releasing container {container_name} at clearance position (Temporary Release)")
