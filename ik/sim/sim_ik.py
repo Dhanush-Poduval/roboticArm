@@ -540,17 +540,19 @@ for container_name, world_pos in rack_positions.items():
                 angle3=final_dest_shelf_position[2]
                 angle4=-1*(angle3+angle2)
                 final_dest_shelf_position[3]=angle4
-                
-    
-
-        if grasped_container_id != -1 and gripper_constraint_id != -1:
-             print(f"Releasing container {container_name} at clearance position (Temporary Release)")
-             p.removeConstraint(gripper_constraint_id)
-             gripper_constraint_id = -1
-             grasped_container_id = -1
-             set_gripper_pos(robot_arm, gripper_open, duration_seconds=0.5)
-             container_obstacle(robot_arm, container_id, enable=1)
-    
+                if not valid_ee(final_dest_shelf_position,robot_arm,EE_LINK_INDEX):
+                    print("Moving to the target shelf stopped as it violates the constraints of the arm")
+                    if final_dest_shelf_position is not None:
+                        execute_pos(final_dest_shelf_position,robot_arm,duration_seconds=2.0)
+                    continue
+                if grasped_container_id != -1 and gripper_constraint_id != -1:
+                    print(f"Releasing container {container_name} at clearance position (Temporary Release)")
+                    p.removeConstraint(gripper_constraint_id)
+                    gripper_constraint_id = -1
+                    grasped_container_id = -1
+                    set_gripper_pos(robot_arm, gripper_open, duration_seconds=0.5)
+                    container_obstacle(robot_arm, container_id, enable=1)
+            
     print(f"Finished sequence for container: {container_name}")
 
 
