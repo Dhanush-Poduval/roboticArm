@@ -17,7 +17,6 @@ p.setAdditionalSearchPath(pybullet_data.getDataPath())
 p.setGravity(0, 0, 0)
 p.loadURDF("plane.urdf") 
 robot_arm = p.loadURDF(urdf_path, useFixedBase=True, basePosition=[0,0,0])
-
 print("\nPyBullet Joint Info")
 for i in range(p.getNumJoints(robot_arm)):
     joint_info = p.getJointInfo(robot_arm, i)
@@ -96,11 +95,12 @@ dest_shelf_height=0.4
 dest_shelf_width=0.5
 dest_shelf_depth=0.4
 
-dest_shelf_pos=np.array([-0.8,0.0,0.0])
+dest_shelf_pos=np.array([-0.8,0.0,0.6])
 dest_shelf_floor_half = [dest_shelf_width / 2, dest_shelf_depth / 2, dest_shelf_thickness / 2]
 dest_shelf_floor_pos = [dest_shelf_pos[0], dest_shelf_pos[1], dest_shelf_pos[2] + dest_shelf_thickness / 2]
 dest_shelf_floor_id = load_obstacle(dest_shelf_floor_pos, dest_shelf_floor_half, color=[0.2, 0.6, 0.2, 0.7])
 #this is just to tell the container to drop a little above the shelf surface
+dest_shelf=dest_shelf_pos[1]
 drop_pos = [dest_shelf_pos[0], dest_shelf_pos[1], dest_shelf_floor_pos[2] + dest_shelf_floor_half[2] + 0.05] 
 print(f"Loaded Destination Shelf at: {dest_shelf_floor_pos}. Drop target placeholder at: {drop_pos}")
 '''
@@ -116,6 +116,11 @@ rack_positions={
     'C07': (-0.4, 0.9, container_base_z+0.5), 
     'C08': (0.0, 0.9, container_base_z+0.5),
     'C09': (0.4, 0.9, container_base_z+0.5),
+}
+target_shelf={
+    '1':(-0.8,0.0,dest_shelf),
+    '2':(-0.8,0.0,dest_shelf+0.05),
+    '3':(-0.8,0.0,dest_shelf+0.15)
 }
 
 x_min_safe=-0.70
@@ -401,7 +406,7 @@ for container_name, world_pos in rack_positions.items():
         bodyUniqueId=robot_arm,
         endEffectorLinkIndex=EE_LINK_INDEX,
         targetPosition=approach_pos_ik,
-        restPoses=current_joint_angles, 
+        restPoses=current_joint_angles_np, 
         maxNumIterations=100,
         jointDamping=JOINT_DAMPING,
         lowerLimits=temp_ll,      
@@ -517,6 +522,16 @@ for container_name, world_pos in rack_positions.items():
     print(f"\nReturning to safe clearence pos: {clearance_pos_tip}")
     if final_poses_clearance is not None:
         execute_pos(final_poses_clearance, robot_arm, duration_seconds=2.0)
+        '''
+        for target_container_name , target_shelf_pos in target_shelf.items():
+            print(f"Moving the arm to the required target position {target_container_name}")
+            target_position_shelf=p.calculateInverseKinematics(
+                robot_arm_id=robot_arm,
+                endEffectorLinkIndex=EE_LINK_INDEX,
+
+            )
+     '''
+
         if grasped_container_id != -1 and gripper_constraint_id != -1:
              print(f"Releasing container {container_name} at clearance position (Temporary Release)")
              p.removeConstraint(gripper_constraint_id)
