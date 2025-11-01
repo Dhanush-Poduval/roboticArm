@@ -95,12 +95,12 @@ dest_shelf_height=0.4
 dest_shelf_width=0.5
 dest_shelf_depth=0.4
 
-dest_shelf_pos=np.array([-0.8,0.0,0.6])
+dest_shelf_pos=np.array([-0.8,-0.15,0.6])
 dest_shelf_floor_half = [dest_shelf_width / 2, dest_shelf_depth / 2, dest_shelf_thickness / 2]
 dest_shelf_floor_pos = [dest_shelf_pos[0], dest_shelf_pos[1], dest_shelf_pos[2] + dest_shelf_thickness / 2]
 dest_shelf_floor_id = load_obstacle(dest_shelf_floor_pos, dest_shelf_floor_half, color=[0.2, 0.6, 0.2, 0.7])
 #this is just to tell the container to drop a little above the shelf surface
-dest_shelf=dest_shelf_pos[1]
+dest_shelf=dest_shelf_pos[2]
 # Final target E-E position for dropping the container
 drop_pos = [dest_shelf_pos[0], dest_shelf_pos[1], dest_shelf_floor_pos[2] + dest_shelf_floor_half[2] + 0.05] 
 print(f"Loaded Destination Shelf at: {dest_shelf_floor_pos}. Drop target placeholder at: {drop_pos}")
@@ -119,9 +119,9 @@ rack_positions={
     'C09': (0.4, 0.9, container_base_z+0.5),
 }
 target_shelf={
-    '1':(-0.8,0.0,dest_shelf),
-    '2':(-0.8,0.0,dest_shelf+0.05),
-    '3':(-0.8,0.0,dest_shelf+0.15)
+    '1':(-0.8,-0.17,dest_shelf+0.17),
+    '2':(-0.8,-0.17+0.06,dest_shelf),
+    '3':(-0.8,-0.17+0.08,dest_shelf)
 }
 target_shelf_list=list(target_shelf.items())
 shelf_index=0
@@ -521,11 +521,8 @@ for container_name, world_pos in rack_positions.items():
                     key,(x,y,z)=target_shelf_list[shelf_index%len(target_shelf_list)]
                     print(f"Movin to target shelf {key}")
                     drop_approach_pos_tip = [x, y, z]
-                    drop_approach_ik = [drop_approach_pos_tip[0], drop_approach_pos_tip[1] - length_EE, drop_approach_pos_tip[2]]
+                    drop_approach_ik = [drop_approach_pos_tip[0], drop_approach_pos_tip[1] , drop_approach_pos_tip[2]- length_EE]
                     shelf_index+=1
-                    
-
-                    
                     print(f"Moving to Destination Shelf Approach (High): {drop_approach_pos_tip}")
                     target_position_shelf_approach_raw = p.calculateInverseKinematics(
                         bodyUniqueId=robot_arm, endEffectorLinkIndex=EE_LINK_INDEX, targetPosition=drop_approach_ik,
