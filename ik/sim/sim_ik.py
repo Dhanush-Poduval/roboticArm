@@ -123,7 +123,8 @@ target_shelf={
     '2':(-0.8,0.0,dest_shelf+0.05),
     '3':(-0.8,0.0,dest_shelf+0.15)
 }
-
+target_shelf_list=list(target_shelf.items())
+shelf_index=0
 x_min_safe=-0.70
 x_max_safe=0.70
 y_app_min=0.3
@@ -517,12 +518,13 @@ for container_name, world_pos in rack_positions.items():
                         current_angles_to_use = final_poses_clearance
                     
                     drop_approach_offset_z = 0.15 
-                    target_shelf_list=list(target_shelf.items())
-                    for key,(x,y,z) in target_shelf.items():
-                        print(f"Shelf {key}: x={x}, y={y}, z={z}")
-                        drop_approach_pos_tip = [x,y,z]
-                        drop_approach_ik = [drop_approach_pos_tip[0], drop_approach_pos_tip[1] - length_EE, drop_approach_pos_tip[2]]
-                        
+                    key,(x,y,z)=target_shelf_list[shelf_index%len(target_shelf_list)]
+                    print(f"Movin to target shelf {key}")
+                    drop_approach_pos_tip = [x, y, z]
+                    drop_approach_ik = [drop_approach_pos_tip[0], drop_approach_pos_tip[1] - length_EE, drop_approach_pos_tip[2]]
+                    shelf_index+=1
+                    
+
                     
                     print(f"Moving to Destination Shelf Approach (High): {drop_approach_pos_tip}")
                     target_position_shelf_approach_raw = p.calculateInverseKinematics(
