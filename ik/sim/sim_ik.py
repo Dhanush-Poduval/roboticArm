@@ -323,9 +323,8 @@ target_marker_id = p.createMultiBody(
     baseVisualShapeIndex=target_marker_visual,
     basePosition=target_pos_tip
 )
-
 clearance_pos_tip = [0.0, target_pos_ik[1]-0.4, 0.7] 
-clearance_pos_ik = [clearance_pos_tip[0], clearance_pos_tip[1], clearance_pos_tip[2] + length_EE]
+clearance_pos_ik = [clearance_pos_tip[0], clearance_pos_tip[1]-length_EE, clearance_pos_tip[2]]
 current_joint_angles = [state[0] for state in p.getJointStates(robot_arm, JOINT_INDICES)]
 
 
@@ -336,6 +335,7 @@ joint_poses_clearence_raw = p.calculateInverseKinematics(
     restPoses=current_joint_angles, maxNumIterations=100,
     jointDamping=JOINT_DAMPING, lowerLimits=DEFAULT_LOWER_LIMITS, upperLimits=DEFAULT_UPPER_LIMITS, jointRanges=JOINT_RANGES
 )
+final_poses_clearance = None 
 if joint_poses_clearence_raw:
     final_poses_clearance = np.array(joint_poses_clearence_raw[:4]) 
 
@@ -506,9 +506,16 @@ for container_name, world_pos in rack_positions.items():
                     
                     current_angles_to_use = final_lift_poses 
                     print(f"\nTraveling with container to transit clearance: {clearance_pos_tip}")
+                    
+                 
                     if final_poses_clearance is not None:
-                        execute_pos(final_poses_clearance, robot_arm, duration_seconds=2.0)
+                        print("**EXECUTING SAFE TRANSIT MOVE**")
+                    
+                        if not execute_pos(final_poses_clearance, robot_arm, duration_seconds=3.0): 
+                            print("!!! SAFE TRANSIT MOVE FAILED DUE TO COLLISION. ABORTING DROP SEQUENCE !!!")
+                            continue #maybe where re-try logic can come
                         current_angles_to_use = final_poses_clearance
+                    
                     drop_approach_offset_z = 0.15 
                     drop_approach_pos_tip = [drop_pos[0], drop_pos[1], drop_pos[2] + drop_approach_offset_z]
                     drop_approach_ik = [drop_approach_pos_tip[0], drop_approach_pos_tip[1] - length_EE, drop_approach_pos_tip[2]]
@@ -545,7 +552,7 @@ for container_name, world_pos in rack_positions.items():
                             print("Final Drop Move FAILED. Aborting drop.")
                             continue
                              
-                        # 4. Release the container and open the gripper
+                        # Release the container and open the gripper
                         if grasped_container_id != -1 and gripper_constraint_id != -1:
                             print(f"Releasing container {container_name} at target shelf.")
                             p.removeConstraint(gripper_constraint_id)
@@ -554,7 +561,7 @@ for container_name, world_pos in rack_positions.items():
                             set_gripper_pos(robot_arm, gripper_open, duration_seconds=0.5)
                             container_obstacle(robot_arm, container_id, enable=1) 
                         
-                        # 5. Move straight up to clear the released container
+                        # Move straight up to clear the released container
                         release_clear_pos_tip = [drop_pos[0], drop_pos[1], drop_pos[2] + APPROACH_HEIGHT_OFFSET]
                         release_clear_ik = [release_clear_pos_tip[0], release_clear_pos_tip[1] - length_EE, release_clear_pos_tip[2]]
                         
@@ -587,4 +594,4 @@ print("\nRunning Simulation Moves")
 
 print("\nMovement Complete")    
 p.disconnect()
-print("\nSimulation Finished. Arm should be at the target.")
+print("\nSimulation Finished.Arm should have performed its tasks")
