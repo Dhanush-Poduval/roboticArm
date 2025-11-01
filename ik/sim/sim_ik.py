@@ -502,23 +502,27 @@ for container_name, world_pos in rack_positions.items():
                     final_lift_poses = np.array(joint_poses_lift_raw[:4])
                     final_lift_poses[3] = -1 * (final_lift_poses[1] + final_lift_poses[2])
                     print(f"\nLifting container to: {lift_pos_tip}")
-                    execute_pos(final_lift_poses, robot_arm, duration_seconds=1.0)
+                    #execute_pos(final_lift_poses, robot_arm, duration_seconds=1.0)
                     
                     current_angles_to_use = final_lift_poses 
                     print(f"\nTraveling with container to transit clearance: {clearance_pos_tip}")
                     
                  
                     if final_poses_clearance is not None:
-                        print("**EXECUTING SAFE TRANSIT MOVE**")
+                        print("moving back to clearence pos")
                     
                         if not execute_pos(final_poses_clearance, robot_arm, duration_seconds=3.0): 
-                            print("!!! SAFE TRANSIT MOVE FAILED DUE TO COLLISION. ABORTING DROP SEQUENCE !!!")
+                            print("Path violated ")
                             continue #maybe where re-try logic can come
                         current_angles_to_use = final_poses_clearance
                     
                     drop_approach_offset_z = 0.15 
-                    drop_approach_pos_tip = [drop_pos[0], drop_pos[1], drop_pos[2] + drop_approach_offset_z]
-                    drop_approach_ik = [drop_approach_pos_tip[0], drop_approach_pos_tip[1] - length_EE, drop_approach_pos_tip[2]]
+                    target_shelf_list=list(target_shelf.items())
+                    for key,(x,y,z) in target_shelf.items():
+                        print(f"Shelf {key}: x={x}, y={y}, z={z}")
+                        drop_approach_pos_tip = [x,y,z]
+                        drop_approach_ik = [drop_approach_pos_tip[0], drop_approach_pos_tip[1] - length_EE, drop_approach_pos_tip[2]]
+                        
                     
                     print(f"Moving to Destination Shelf Approach (High): {drop_approach_pos_tip}")
                     target_position_shelf_approach_raw = p.calculateInverseKinematics(
