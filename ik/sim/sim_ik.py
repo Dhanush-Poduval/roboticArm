@@ -101,6 +101,7 @@ dest_shelf_floor_pos = [dest_shelf_pos[0], dest_shelf_pos[1], dest_shelf_pos[2] 
 dest_shelf_floor_id = load_obstacle(dest_shelf_floor_pos, dest_shelf_floor_half, color=[0.2, 0.6, 0.2, 0.7])
 #this is just to tell the container to drop a little above the shelf surface
 dest_shelf=dest_shelf_pos[1]
+# Final target E-E position for dropping the container
 drop_pos = [dest_shelf_pos[0], dest_shelf_pos[1], dest_shelf_floor_pos[2] + dest_shelf_floor_half[2] + 0.05] 
 print(f"Loaded Destination Shelf at: {dest_shelf_floor_pos}. Drop target placeholder at: {drop_pos}")
 '''
@@ -368,8 +369,6 @@ else:
     exit()
 
 
-
-#APPROACH_HEIGHT_OFFSET = 0.1
 horizontal_approach_offset=0.15
 
 for container_name, world_pos in rack_positions.items():
@@ -504,18 +503,76 @@ for container_name, world_pos in rack_positions.items():
                     final_lift_poses[3] = -1 * (final_lift_poses[1] + final_lift_poses[2])
                     print(f"\nLifting container to: {lift_pos_tip}")
                     execute_pos(final_lift_poses, robot_arm, duration_seconds=1.0)
-                    '''
-                    if gripper_constraint_id != -1:
-                        print(f"releasing the container{container_name} ")
-                        p.removeConstraint(gripper_constraint_id)
-                        gripper_constraint_id = -1
-                        grasped_container_id = -1
-                        set_gripper_pos(robot_arm, gripper_open, duration_seconds=0.5)
-                    '''
-                # if not execute_pos(final_target_poses, robot_arm, duration_seconds=1.0):
-                    # print("Final Target Move FAILED due to path collision.")
-                
-           
+                    
+                    current_angles_to_use = final_lift_poses 
+                    print(f"\nTraveling with container to transit clearance: {clearance_pos_tip}")
+                    if final_poses_clearance is not None:
+                        execute_pos(final_poses_clearance, robot_arm, duration_seconds=2.0)
+                        current_angles_to_use = final_poses_clearance
+                    drop_approach_offset_z = 0.15 
+                    drop_approach_pos_tip = [drop_pos[0], drop_pos[1], drop_pos[2] + drop_approach_offset_z]
+                    drop_approach_ik = [drop_approach_pos_tip[0], drop_approach_pos_tip[1] - length_EE, drop_approach_pos_tip[2]]
+                    
+                    print(f"Moving to Destination Shelf Approach (High): {drop_approach_pos_tip}")
+                    target_position_shelf_approach_raw = p.calculateInverseKinematics(
+                        bodyUniqueId=robot_arm, endEffectorLinkIndex=EE_LINK_INDEX, targetPosition=drop_approach_ik,
+                        restPoses=current_angles_to_use, maxNumIterations=100, jointDamping=JOINT_DAMPING,
+                        lowerLimits=DEFAULT_LOWER_LIMITS, upperLimits=DEFAULT_UPPER_LIMITS, jointRanges=JOINT_RANGES)
+
+                    if target_position_shelf_approach_raw:
+                        final_dest_shelf_approach_position = np.array(target_position_shelf_approach_raw[:4])
+                        final_dest_shelf_approach_position[3] = -1 * (final_dest_shelf_approach_position[1] + final_dest_shelf_approach_position[2])
+                        
+                        if not execute_pos(final_dest_shelf_approach_position, robot_arm, duration_seconds=1.0):
+                            print("Destination Approach Move FAILED. Aborting drop.")
+                            continue
+                    else:
+                        print("IK solution for destination approach failed. Aborting drop.")
+                        continue
+                    dest_final_ik = [drop_pos[0], drop_pos[1] - length_EE, drop_pos[2]] 
+                    print(f"Moving to Final Drop Position (Low): {drop_pos}")
+                    
+                    target_position_shelf_final_raw = p.calculateInverseKinematics(
+                        bodyUniqueId=robot_arm, endEffectorLinkIndex=EE_LINK_INDEX, targetPosition=dest_final_ik,
+                        restPoses=final_dest_shelf_approach_position, maxNumIterations=100, jointDamping=JOINT_DAMPING,
+                        lowerLimits=DEFAULT_LOWER_LIMITS, upperLimits=DEFAULT_UPPER_LIMITS, jointRanges=JOINT_RANGES)
+
+                    if target_position_shelf_final_raw:
+                        final_dest_shelf_final_position = np.array(target_position_shelf_final_raw[:4])
+                        final_dest_shelf_final_position[3] = -1 * (final_dest_shelf_final_position[1] + final_dest_shelf_final_position[2])
+
+                        if not execute_pos(final_dest_shelf_final_position, robot_arm, duration_seconds=0.5):
+                            print("Final Drop Move FAILED. Aborting drop.")
+                            continue
+                             
+                        # 4. Release the container and open the gripper
+                        if grasped_container_id != -1 and gripper_constraint_id != -1:
+                            print(f"Releasing container {container_name} at target shelf.")
+                            p.removeConstraint(gripper_constraint_id)
+                            gripper_constraint_id = -1
+                            grasped_container_id = -1
+                            set_gripper_pos(robot_arm, gripper_open, duration_seconds=0.5)
+                            container_obstacle(robot_arm, container_id, enable=1) 
+                        
+                        # 5. Move straight up to clear the released container
+                        release_clear_pos_tip = [drop_pos[0], drop_pos[1], drop_pos[2] + APPROACH_HEIGHT_OFFSET]
+                        release_clear_ik = [release_clear_pos_tip[0], release_clear_pos_tip[1] - length_EE, release_clear_pos_tip[2]]
+                        
+                        print(f"\nMoving up to clear released container at: {release_clear_pos_tip}")
+                        joint_poses_clear_raw = p.calculateInverseKinematics(
+                            bodyUniqueId=robot_arm, endEffectorLinkIndex=EE_LINK_INDEX, targetPosition=release_clear_ik,
+                            restPoses=final_dest_shelf_final_position, maxNumIterations=100, jointDamping=JOINT_DAMPING,
+                            lowerLimits=DEFAULT_LOWER_LIMITS, upperLimits=DEFAULT_UPPER_LIMITS, jointRanges=JOINT_RANGES)
+
+                        if joint_poses_clear_raw:
+                            final_clear_poses = np.array(joint_poses_clear_raw[:4])
+                            final_clear_poses[3] = -1 * (final_clear_poses[1] + final_clear_poses[2])
+                            execute_pos(final_clear_poses, robot_arm, duration_seconds=1.0)
+                            
+                    else:
+                        print("IK solution for destination final failed. Aborting drop.")
+                        continue
+                        
             
         else:
            print("Final Target out of reach .")
@@ -523,36 +580,6 @@ for container_name, world_pos in rack_positions.items():
     if final_poses_clearance is not None:
         execute_pos(final_poses_clearance, robot_arm, duration_seconds=2.0)
         
-        for target_container_name , target_shelf_pos in target_shelf.items():
-            dest_shelf_pose=[target_shelf_pos[0],target_shelf_pos[1],target_shelf_pos[2]+0.25]
-            print(f"Moving the arm to the required target position {target_container_name}")
-            target_position_shelf=p.calculateInverseKinematics(
-                robot_arm_id=robot_arm,
-                endEffectorLinkIndex=EE_LINK_INDEX,
-                targetPosition=dest_shelf_pose,
-                maxNumIterations=100,
-                jointDamping=JOINT_DAMPING,
-                jointRanges=JOINT_RANGES
-            )
-            if target_position_shelf is not None:
-                final_dest_shelf_position=np.array(target_position_shelf[:4])
-                angle2=final_dest_shelf_position[1]
-                angle3=final_dest_shelf_position[2]
-                angle4=-1*(angle3+angle2)
-                final_dest_shelf_position[3]=angle4
-                if not valid_ee(final_dest_shelf_position,robot_arm,EE_LINK_INDEX):
-                    print("Moving to the target shelf stopped as it violates the constraints of the arm")
-                    if final_dest_shelf_position is not None:
-                        execute_pos(final_dest_shelf_position,robot_arm,duration_seconds=2.0)
-                    continue
-                if grasped_container_id != -1 and gripper_constraint_id != -1:
-                    print(f"Releasing container {container_name} at clearance position (Temporary Release)")
-                    p.removeConstraint(gripper_constraint_id)
-                    gripper_constraint_id = -1
-                    grasped_container_id = -1
-                    set_gripper_pos(robot_arm, gripper_open, duration_seconds=0.5)
-                    container_obstacle(robot_arm, container_id, enable=1)
-            
     print(f"Finished sequence for container: {container_name}")
 
 
