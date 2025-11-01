@@ -119,7 +119,7 @@ rack_positions={
     'C09': (0.4, 0.9, container_base_z+0.5),
 }
 target_shelf={
-    '1':(-0.68,-0.17,dest_shelf+0.17),
+    '1':(-0.68,-0.17,dest_shelf-0.17),
     '2':(-0.68,-0.17+0.06,dest_shelf),
     '3':(-0.68,-0.17+0.08,dest_shelf)
 }
@@ -502,7 +502,7 @@ for container_name, world_pos in rack_positions.items():
                 if joint_poses_lift_raw:
                     final_lift_poses = np.array(joint_poses_lift_raw[:4])
                     final_lift_poses[3] = -1 * (final_lift_poses[1] + final_lift_poses[2])
-                    print(f"\nLifting container to: {lift_pos_tip}")
+                    #print(f"\nLifting container to: {lift_pos_tip}")
                     #execute_pos(final_lift_poses, robot_arm, duration_seconds=1.0)
                     
                     current_angles_to_use = final_lift_poses 
@@ -521,9 +521,10 @@ for container_name, world_pos in rack_positions.items():
                     key,(x,y,z)=target_shelf_list[shelf_index%len(target_shelf_list)]
                     print(f"Movin to target shelf {key}")
                     drop_approach_pos_tip = [x, y, z]
-                    drop_approach_ik = [drop_approach_pos_tip[0], drop_approach_pos_tip[1] , drop_approach_pos_tip[2]- length_EE]
+                    drop_approach_ik = [drop_approach_pos_tip[0], drop_approach_pos_tip[1]- length_EE , drop_approach_pos_tip[2]]
                     shelf_index+=1
-                    print(f"Moving to Destination Shelf Approach (High): {drop_approach_pos_tip}")
+                
+                    print(f"Moving to Destination Shelf Approach (High): {drop_approach_ik}")
                     target_position_shelf_approach_raw = p.calculateInverseKinematics(
                         bodyUniqueId=robot_arm, endEffectorLinkIndex=EE_LINK_INDEX, targetPosition=drop_approach_ik,
                         restPoses=current_angles_to_use, maxNumIterations=100, jointDamping=JOINT_DAMPING,
