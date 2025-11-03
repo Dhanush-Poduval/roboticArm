@@ -102,7 +102,7 @@ dest_shelf_floor_id = load_obstacle(dest_shelf_floor_pos, dest_shelf_floor_half,
 #this is just to tell the container to drop a little above the shelf surface
 dest_shelf=dest_shelf_pos[2]
 # Final target E-E position for dropping the container
-drop_pos = [dest_shelf_pos[0], dest_shelf_pos[1], dest_shelf_floor_pos[2] + dest_shelf_floor_half[2] + 0.05] 
+drop_pos = [dest_shelf_pos[0], dest_shelf_pos[1], dest_shelf_floor_pos[2]+0.1] 
 print(f"Loaded Destination Shelf at: {dest_shelf_floor_pos}. Drop target placeholder at: {drop_pos}")
 '''
 inter_shelf_ids=[]
@@ -557,7 +557,7 @@ for container_name, world_pos in rack_positions.items():
                     else:
                         print("IK solution for destination approach failed")
                         continue
-                    dest_final_ik = [drop_pos[0], drop_pos[1] - length_EE, drop_pos[2]] 
+                    dest_final_ik = [drop_approach_ik[0], drop_approach_ik[1] - length_EE, drop_approach_ik[2]] 
                     print(f"Moving to Final Drop Position : {drop_pos}")
                     
                     target_position_shelf_final_raw = p.calculateInverseKinematics(
@@ -580,7 +580,7 @@ for container_name, world_pos in rack_positions.items():
                             p.removeConstraint(gripper_constraint_id)
                             gripper_constraint_id = -1
                             grasped_container_id = -1
-                            set_gripper_pos(robot_arm, gripper_open, duration_seconds=0.5)
+                            set_gripper_pos(robot_arm, gripper_open, duration_seconds=3)
                             container_obstacle(robot_arm, container_id, enable=1) 
                         
                         # Move straight up to clear the released container
