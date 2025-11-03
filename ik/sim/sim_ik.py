@@ -523,13 +523,14 @@ for container_name, world_pos in rack_positions.items():
                     drop_approach_pos_tip = [x, y, z]
                     drop_approach_ik = [drop_approach_pos_tip[0], drop_approach_pos_tip[1]- length_EE , drop_approach_pos_tip[2]]
                     shelf_index+=1
-                
+                    '''
                     print(f"Moving to Destination Shelf Approach (High): {drop_approach_ik}")
                     target_position_shelf_approach_raw = p.calculateInverseKinematics(
                         bodyUniqueId=robot_arm, endEffectorLinkIndex=EE_LINK_INDEX, targetPosition=drop_approach_ik,
                         restPoses=current_angles_to_use, maxNumIterations=100, jointDamping=JOINT_DAMPING,
                         lowerLimits=DEFAULT_LOWER_LIMITS, upperLimits=DEFAULT_UPPER_LIMITS, jointRanges=JOINT_RANGES)
-
+                    '''
+                    '''
                     if target_position_shelf_approach_raw:
                         final_dest_shelf_approach_position = np.array(target_position_shelf_approach_raw[:4])
                         final_dest_shelf_approach_position[3] = -1 * (final_dest_shelf_approach_position[1] + final_dest_shelf_approach_position[2])
@@ -539,6 +540,22 @@ for container_name, world_pos in rack_positions.items():
                             continue
                     else:
                         print("IK solution for destination approach failed. Aborting drop.")
+                        continue
+                    '''
+                    target_shelf_clearence=[-0.58,-0.15,0.9]
+                    print(f"Moving to target shelf clearence :{target_shelf_clearence}")
+                    target_shelf_clearence_movement=p.calculateInverseKinematics(
+                        bodyUniqueId=robot_arm,endEffectorLinkIndex=EE_LINK_INDEX,targetPosition=target_shelf_clearence,restPoses=current_angles_to_use, maxNumIterations=100, jointDamping=JOINT_DAMPING,
+                        lowerLimits=DEFAULT_LOWER_LIMITS, upperLimits=DEFAULT_UPPER_LIMITS, jointRanges=JOINT_RANGES
+                    )
+                    if target_shelf_clearence_movement:
+                        final_dest_shelf_approach_position = np.array(target_shelf_clearence_movement[:4])
+                        final_dest_shelf_approach_position[3] = -1 * (final_dest_shelf_approach_position[1] + final_dest_shelf_approach_position[2])
+                        if not execute_pos(final_dest_shelf_approach_position, robot_arm, duration_seconds=1.0):
+                            print("Destination Approach Move FAILED. Aborting drop.")
+                            continue
+                    else:
+                        print("IK solution for destination approach failed")
                         continue
                     dest_final_ik = [drop_pos[0], drop_pos[1] - length_EE, drop_pos[2]] 
                     print(f"Moving to Final Drop Position (Low): {drop_pos}")
