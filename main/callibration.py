@@ -18,15 +18,20 @@ imagep=[]
 images=glob.glob('calibration_images/*.jpg')
 
 
-for fname in images:
-    img=cv2.imread(fname)
+for image1 in images:
+    img=cv2.imread(image1)
     gray=cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
     ret,cornors=cv2.findChessboardCorners(gray,(checkboard_cols,checkboard_rows),None)
     if ret==True:
         objpoints.append(objp)
         #increasingthe accuracy
         corners2 = cv2.cornerSubPix(gray, cornors, (11, 11), (-1, -1), criteria)
-        imagep.append(corners2)
+        cv2.drawChessboardCorners(img,square_size,corners2,ret)
+        cv2.imshow(img)
+        cv2.waitKey(2000)
+
+cv2.destroyAllWindows()
+        # imagep.append(corners2)
 if len(objpoints)>5:
     ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(
         objpoints, imagep, gray.shape[::-1], None, None
