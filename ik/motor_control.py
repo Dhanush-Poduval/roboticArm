@@ -3,7 +3,7 @@ import time
 
 port='/dev/ttyUSB0'
 
-baud_rate=9600
+baud_rate=115200
 
 try:
     arduino=serial.Serial(port,baud_rate,timeout=1)

@@ -1,5 +1,6 @@
 import torch
 import cv2
+import numpy as np
 import math
 model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
 cap = cv2.VideoCapture(0)
@@ -10,6 +11,11 @@ unique_centers = []
 tolerance = 10 
 max_containers = 5 
 detected_aruco_positions={}
+
+#right now just putting dummy values
+camera_matrix=np.array([[800, 0, 320], [0, 800, 240], [0, 0, 1]],dtype=np.float32)
+dist=np.zeros((4,1))
+
 
 while True:
     ret, frame = cap.read()
