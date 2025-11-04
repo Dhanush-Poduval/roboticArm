@@ -542,7 +542,7 @@ for container_name, world_pos in rack_positions.items():
                         print("IK solution for destination approach failed. Aborting drop.")
                         continue
                     '''
-                    target_shelf_clearence=[-0.43,-0.2,0.32]
+                    target_shelf_clearence=[-0.58,-0.4,0.78]
                     print(f"Moving to target shelf clearence :{target_shelf_clearence}")
                     target_shelf_clearence_movement=p.calculateInverseKinematics(
                         bodyUniqueId=robot_arm,endEffectorLinkIndex=EE_LINK_INDEX,targetPosition=target_shelf_clearence,restPoses=current_angles_to_use, maxNumIterations=100, jointDamping=JOINT_DAMPING,
@@ -588,7 +588,7 @@ for container_name, world_pos in rack_positions.items():
                         release_clear_pos_tip = [drop_pos[0], drop_pos[1], drop_pos[2] + APPROACH_HEIGHT_OFFSET]
                         release_clear_ik = [release_clear_pos_tip[0], release_clear_pos_tip[1] - length_EE, release_clear_pos_tip[2]]
                         '''
-                        # print(f"\nMoving up to clear released container at: {release_clear_pos_tip}")
+                        print(f"\nMoving up to clear released container at: {target_shelf_clearence}")
                         joint_poses_clear_raw = p.calculateInverseKinematics(
                             bodyUniqueId=robot_arm, endEffectorLinkIndex=EE_LINK_INDEX, targetPosition=target_shelf_clearence,
                             restPoses=final_dest_shelf_final_position, maxNumIterations=100, jointDamping=JOINT_DAMPING,
