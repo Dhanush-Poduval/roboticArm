@@ -569,7 +569,7 @@ for container_name, world_pos in rack_positions.items():
                         final_dest_shelf_final_position = np.array(target_position_shelf_final_raw[:4])
                         final_dest_shelf_final_position[3] = -1 * (final_dest_shelf_final_position[1] + final_dest_shelf_final_position[2])
 
-                        if not execute_pos(final_dest_shelf_final_position, robot_arm, duration_seconds=0.5):
+                        if not execute_pos(final_dest_shelf_final_position, robot_arm, duration_seconds=0.2):
                             print("Final Drop Move FAILED. Aborting drop.")
                             continue
                              
