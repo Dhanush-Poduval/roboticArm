@@ -9,7 +9,7 @@ containers=container_positions.values()
 ik_target_pos=list(containers)
 print("Containers seen are ")
 for i , c in enumerate(ik_target_pos):
-    print(f"x={c[0]},y={c[1]:.2f},z={c[3]:.2f}")
+    print(f"x={c[0]},y={c[1]:.2f},z={c[2]:.2f}")
 
 for x,y,z in ik_target_pos:
 
@@ -52,9 +52,11 @@ for x,y,z in ik_target_pos:
 
   
     def clearence_position(x , y, z):
-        clearence_pos=[x-0.5,y-0.5,z-0.5]#keeping dynamic for now will test if issue
+        clearence_pos=[x-0.5,y-0.5,z-0.5]#keeping dynamic for now will change to static if issue
         print(f"Clearence position is : {clearence_pos[0],clearence_pos[1],clearence_pos[2]}")
         inverse_kinematics(J1,J2,J3,J4,clearence_pos[0],clearence_pos[1],clearence_pos[2])
+    def approach_position_container():
+        pass
 
     #this will be the motor_control 
     def motor_movement():
