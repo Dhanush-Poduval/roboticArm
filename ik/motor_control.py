@@ -15,7 +15,7 @@ except serial.SerialException as e:
 
 def servo_angle(angle):
     try:
-        command=str(angle)
+        command=str(angle) +'\n'
         arduino.write(command.encode('utf-8'))
         print(f'Angle {angle}')
     except Exception as e:
