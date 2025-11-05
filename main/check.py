@@ -12,16 +12,34 @@ tolerance = 10
 max_containers = 5 
 detected_aruco_positions={}
 
-#right now just putting dummy values
+#right now just putting dummy values will come from callibration
 camera_matrix=np.array([[800, 0, 320], [0, 800, 240], [0, 0, 1]],dtype=np.float32)
 dist=np.zeros((4,1))
 
+fx=camera_matrix[0,0]
+fy=camera_matrix[1,1]
+cx=camera_matrix[0,2]
+cy=camera_matrix[1,2]
 
-while True:
+container_positions={}
+
+def get_simulated_tof_distance(x_pixel,y_pixel):
+    #dummy till i get the tof 
+    return 1.5
+
+def calculated_3d_coods(u,v,z_tof):
+    Xc=(u-cx)*z_tof/fx
+    Yc=(v-cy)*z_tof/fy
+
+    Zc=z_tof
+    return Xc,Yc,Zc
+
+while True: 
     ret, frame = cap.read()
     if not ret:
         break
     corners , ids,rejected=cv2.aruco.detectMarkers(frame,aruco_dict,parameters=aruco_params)
+    detected_aruco_positions={}
     if ids is not None:
         cv2.aruco.drawDetectedMarkers(frame,corners,ids)
     for i in range(len(ids)):
@@ -46,21 +64,27 @@ while True:
         cy = int((y1 + y2)/2)
         if all(math.hypot(cx - ux, cy - uy) > tolerance for ux, uy in unique_centers):
             unique_centers.append((cx, cy))
-        if len(unique_centers) >= max_containers:
-            break
+        # if len(unique_centers) >= max_containers:
+        #     break
     for (ux, uy) in unique_centers:
         cv2.circle(frame, (ux, uy), 5, (0, 0, 255), -1)
 
-    cv2.imshow("YOLOv5 Webcam", frame)
-    if len(unique_centers) >= max_containers:
-        print("All container centers detected!")
-        break
+ 
+    # if len(unique_centers) >= max_containers:
+    #     print("All container centers detected!")
+    #     break
+    for i,(ux,uy) in enumerate(unique_centers,1):
+        z_tof=get_simulated_tof_distance(ux,uy)
+        xc,yc,zc=calculated_3d_coods(ux,uy,z_tof)
+        container_positions[i]=(xc,yc,zc)
+        text=f"x:{xc:.2f} , y:{yc:.2f} , z={zc:.2f}"
+        cv2.putText(frame,text,(ux-50,uy-30),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
 
-
+cv2.imshow("YOLOv5 Webcam", frame)
 cap.release()
 cv2.destroyAllWindows()
 

@@ -29,9 +29,11 @@ for image1 in images:
         cv2.drawChessboardCorners(img,square_size,corners2,ret)
         cv2.imshow(img)
         cv2.waitKey(2000)
+        imagep.append(corners2)
+        print(imagep)
 
 cv2.destroyAllWindows()
-        # imagep.append(corners2)
+      
 if len(objpoints)>5:
     ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(
         objpoints, imagep, gray.shape[::-1], None, None
