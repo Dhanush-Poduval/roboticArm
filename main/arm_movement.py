@@ -50,9 +50,11 @@ for x,y,z in ik_target_pos:
         return valid_solutions[1] if len(valid_solutions)==2 else valid_solutions[0]#this is just to prioritse the elbow down config
             
 
-    #this will be the clearence position movement
-    def clearence_position():
-        pass
+  
+    def clearence_position(x , y, z):
+        clearence_pos=[x-0.5,y-0.5,z-0.5]#keeping dynamic for now will test if issue
+        print(f"Clearence position is : {clearence_pos[0],clearence_pos[1],clearence_pos[2]}")
+        inverse_kinematics(J1,J2,J3,J4,clearence_pos[0],clearence_pos[1],clearence_pos[2])
 
     #this will be the motor_control 
     def motor_movement():
