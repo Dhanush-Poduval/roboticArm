@@ -523,14 +523,14 @@ for container_name, world_pos in rack_positions.items():
                     drop_approach_pos_tip = [x, y, z]
                     drop_approach_ik = [drop_approach_pos_tip[0], drop_approach_pos_tip[1]- length_EE , drop_approach_pos_tip[2]]
                     shelf_index+=1
-                    '''
+                    ''' 
                     print(f"Moving to Destination Shelf Approach (High): {drop_approach_ik}")
                     target_position_shelf_approach_raw = p.calculateInverseKinematics(
                         bodyUniqueId=robot_arm, endEffectorLinkIndex=EE_LINK_INDEX, targetPosition=drop_approach_ik,
                         restPoses=current_angles_to_use, maxNumIterations=100, jointDamping=JOINT_DAMPING,
                         lowerLimits=DEFAULT_LOWER_LIMITS, upperLimits=DEFAULT_UPPER_LIMITS, jointRanges=JOINT_RANGES)
-                    '''
-                    '''
+                    
+                    
                     if target_position_shelf_approach_raw:
                         final_dest_shelf_approach_position = np.array(target_position_shelf_approach_raw[:4])
                         final_dest_shelf_approach_position[3] = -1 * (final_dest_shelf_approach_position[1] + final_dest_shelf_approach_position[2])
@@ -598,6 +598,8 @@ for container_name, world_pos in rack_positions.items():
                             final_clear_poses = np.array(joint_poses_clear_raw[:4])
                             final_clear_poses[3] = -1 * (final_clear_poses[1] + final_clear_poses[2])
                             execute_pos(final_clear_poses, robot_arm, duration_seconds=1.0)
+                        print(f"Moving to the clearence position : {clearence_position}")
+                        moving_back_to_clearence=p.calculateINverseKinematic()
                             
                     else:
                         print("IK solution for destination final failed. Aborting drop.")

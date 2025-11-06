@@ -73,7 +73,3 @@ for x,y,z in ik_target_pos:
         pass
 #recall clearence position
 
-#logging to nextjs
-
-#uvicorn at end
-
