@@ -22,11 +22,11 @@ aruco_params = cv2.aruco.DetectorParameters()
 aruco_detector = cv2.aruco.ArucoDetector(aruco_dict, aruco_params)
 
 unique_centers = [] 
-tolerance = 50 
-max_containers = 5 
+tolerance = 60
+# max_containers = 5 
 detected_aruco_positions = {}
 container_positions = {}
-run_time_s = 5 
+run_time_s = 15
 camera_matrix = np.array([[800.0, 0.0, 320.0], [0.0, 800.0, 240.0], [0.0, 0.0, 1.0]], dtype=np.float32)
 dist = np.zeros((4, 1), dtype=np.float32)
 
@@ -93,7 +93,7 @@ while (time.time() - start_time) < run_time_s:
         
         z_tof_meters = get_simulated_tof_distance(ux, uy)
         xc, yc, zc = calculated_3d_coods(ux, uy, z_tof_meters)
-        container_positions[f'C{i}'] = (round(xc, 2), round(yc, 2), round(zc, 2))
+        container_positions[f'C{i}'] = (float(round(xc, 2)), float(round(yc, 2)), float(round(zc, 2)))
         text = f"C{i}: X:{xc:.2f}, Y:{yc:.2f}, Z:{zc:.2f} (mm)"
         cv2.putText(frame, text, (ux - 50, uy - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
     cv2.imshow("Vision Processing", frame)
@@ -104,15 +104,15 @@ while (time.time() - start_time) < run_time_s:
 cap.release()
 cv2.destroyAllWindows()
 
-print("\n--- Final Vision Output ---")
+print("\nFinal Vision Output")
 print("Container 3D Positions (mm):", container_positions)
 print("AruCo Pixel Positions:", detected_aruco_positions)
-output_data = {
-    'containers': container_positions,
-    'aruco_pixels': detected_aruco_positions 
-}
-json_filepath = 'vision_data.json'
-with open(json_filepath, 'w') as f:
-    json.dump(output_data, f, indent=4)
+# output_data = {
+#     'containers': container_positions,
+#     'aruco_pixels': detected_aruco_positions 
+# }
+# json_filepath = 'vision_data.json'
+# with open(json_filepath, 'w') as f:
+#     json.dump(output_data, f, indent=4)
 
-print(f"\nData successfully saved to {json_filepath}")
+# print(f"\nData successfully saved to {json_filepath}")
