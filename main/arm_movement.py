@@ -59,9 +59,37 @@ def inverse_kinematics(J1,J2,J3,J4,x,y,z):
         return False
     return valid_solutions[1] if len(valid_solutions)==2 else valid_solutions[0]#this is just to prioritse the elbow down config
         
-def gripper_actions():
-    #closing and opening
-    pass
+def gripper_action_open():
+    try:
+         command_open=str(90)+'\n'
+        #  command_close=str(90)+'\n'
+         arduino.write(command_open.encode('utf-8'))
+         print(f"Gripper opened angle put as {command_open}")
+    except Exception as e:
+         print(f"Error : {e}")
+    except KeyboardInterrupt:
+         print("Keyboard stopped")
+    finally:
+         if arduino.is_open:
+              arduino.close()
+              print("Serial port closed")
+
+def gripper_action_close():
+    try:
+         angle=-1*90
+         command_close=str(angle)+'\n'
+         arduino.write(command_close.encode('utf-8'))
+         print(f"Gripper closed at angles :{command_close}")
+    except Exception as e:
+         print(f"Error : {e}")
+    except KeyboardInterrupt:
+         print("Keyboard inturrupted")
+    finally:
+         if arduino.is_open:
+              arduino.close()
+              print("Serial port closed")
+            
+         
     
 
 
