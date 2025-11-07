@@ -4,6 +4,7 @@ from ..ik.inverse_k import is_valid
 import math
 import numpy as np
 import serial ,time
+import threading
 #this will be the ik function for easy access
 global clearence_pos
 J1,J2,J3,J4=20,130,150,60
@@ -170,7 +171,78 @@ for container in containers:
     print("Moving to position")
     motor_movement(theta1,theta2,theta3,theta4)
     print(f"Reached the final position")
-    print(f"Closing the gripper ")
+    print(f"Holding the container ")
+    gripper_action_close()
+    print("Closed the gripper and holding the container")
+    print(f"Returning to clearence position : {clearence_pos}")
+    t1 , t2 , t3 , t4=clearence_position()
+    print(f"The angles formed are {t1 ,t2,t3,t4}")
+    motor_movement(t1,t2,t3,t4)
+    print("The arm has reached the clearence position")
+    is_picked_up=retry()
+    if is_picked_up :
+        continue
+    else:
+        print(f"Moving to approch position of the {i+1} container")
+        approach_pos=[container[0]-0.05,container[1]-0.08,container[2]-0.08]
+        angle1 , angle2 , angle3,angle4= inverse_kinematics(approach_pos[0],approach_pos[1],approach_pos[2])
+        print(f"Angles formed are : {angle1 , angle2 ,angle3 ,angle4}")
+        print("Executing motion")
+        motor_movement(angle1,angle2,angle3,angle4)
+        print("Motion complete gripper should be at approach position")
+        print("Moving to the final position of the container")
+        final_position_ik=[container[0],container[1],container[2]-J4]
+        print("The final position coordinates are : {final_position_ik}")
+        print("Moving to the final position for container")
+        theta1,theta2,theta3,theta4=inverse_kinematics(final_position_ik[0],final_position_ik[1],final_position_ik[2])
+        print(f"Angles formed : {theta1,theta2,theta3,theta4}")
+        print("Moving to position")
+        motor_movement(theta1,theta2,theta3,theta4)
+        print(f"Reached the final position")
+        print(f"Holding the container ")
+        gripper_action_close()
+        print("Closed the gripper and holding the container")
+        print(f"Returning to clearence position : {clearence_pos}")
+        t1 , t2 , t3 , t4=clearence_position()
+        print(f"The angles formed are {t1 ,t2,t3,t4}")
+        motor_movement(t1,t2,t3,t4)
+        print("The arm has reached the clearence position")
+        is_picked_up=retry()
+        if is_picked_up :
+            continue
+        else:
+            print(f"Moving to approch position of the {i+1} container")
+            approach_pos=[container[0]-0.05,container[1]-0.08,container[2]-0.08]
+            angle1 , angle2 , angle3,angle4= inverse_kinematics(approach_pos[0],approach_pos[1],approach_pos[2])
+            print(f"Angles formed are : {angle1 , angle2 ,angle3 ,angle4}")
+            print("Executing motion")
+            motor_movement(angle1,angle2,angle3,angle4)
+            print("Motion complete gripper should be at approach position")
+            print("Moving to the final position of the container")
+            final_position_ik=[container[0],container[1],container[2]-J4]
+            print("The final position coordinates are : {final_position_ik}")
+            print("Moving to the final position for container")
+            theta1,theta2,theta3,theta4=inverse_kinematics(final_position_ik[0],final_position_ik[1],final_position_ik[2])
+            print(f"Angles formed : {theta1,theta2,theta3,theta4}")
+            print("Moving to position")
+            motor_movement(theta1,theta2,theta3,theta4)
+            print(f"Reached the final position")
+            print(f"Holding the container ")
+            gripper_action_close()
+            print("Closed the gripper and holding the container")
+            print(f"Returning to clearence position : {clearence_pos}")
+            t1 , t2 , t3 , t4=clearence_position()
+            print(f"The angles formed are {t1 ,t2,t3,t4}")
+            motor_movement(t1,t2,t3,t4)
+            print("The arm has reached the clearence position")
+            is_picked_up=retry()
+            if is_picked_up :
+                continue
+            else:
+                 print("Log:Pick up not successfull")
+    
+        
+         
     
 
 
