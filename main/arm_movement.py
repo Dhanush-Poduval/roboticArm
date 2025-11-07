@@ -256,6 +256,15 @@ for container in containers:
     print(f"angles formed : {tt1,tt2,tt3,tt4}")
     motor_movement(tt1,tt2,tt3,tt4)
     print(f"Reached the approach target pos")
+    print(f"moving to final target final position {target_shelf_pos}")
+    final_angle1,final_angle2,final_angle3,final_angle4=inverse_kinematics(target_shelf_pos[0],target_shelf_pos[1],target_shelf_pos[2])
+    print(f"Angle values : {final_angle1,final_angle2,final_angle3,final_angle4}")
+    motor_movement(final_angle1,final_angle2,final_angle3,final_angle4)
+    print(f"Reached the final target position")
+    gripper_action_open()
+    print("Released the container")
+    
+
 
     
     
