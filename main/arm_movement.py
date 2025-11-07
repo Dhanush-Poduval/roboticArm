@@ -1,5 +1,4 @@
-from main.check import detected_aruco_positions,container_positions
-from ..ik.motor_control import motor_movement
+from main.check import run_object_detection
 from ..ik.inverse_k import is_valid
 import math
 import numpy as np
@@ -8,11 +7,12 @@ import threading
 #this will be the ik function for easy access
 global clearence_pos
 J1,J2,J3,J4=20,130,150,60
-containers=container_positions.values()
+container_pos,aruco_pos=run_object_detection()
+containers=container_pos.values()
 ik_target_pos=list(containers)
 target_shelf_pos=[]
 
-for i in detected_aruco_positions.values():
+for i in aruco_pos.values():
      target_shelf_pos.append(i)
 
 print("Containers seen are ")
@@ -142,13 +142,19 @@ def motor_movement(angle1 , angle2 , angle3 , angle4):
                 arduino.close()
                 print("Serial port closed")
 
-def retry():
-    pass
+def retry(current_container_X,current_container_Y,current_container_Z):
+    check_container_pos , check_aruco_pos=run_object_detection()
+    for i,c in check_container_pos.items():
+        if c[0]==current_container_X+0.5 and c[1]==current_container_Y+0.5 and c[3]==current_container_Z+0.5:
+            return True
+        print(f"Container {i} has not been picked up")
+    return False
+         
 
 #target position movement
 target_shelf_pos=[]
 def target_shelf():
-    for shelf_id,target_positions in detected_aruco_positions.items():
+    for shelf_id,target_positions in aruco_pos.items():
         target_shelf_pos.append(target_positions)
 print(target_shelf_pos)
 
@@ -184,8 +190,8 @@ for container in containers:
     print(f"The angles formed are {t1 ,t2,t3,t4}")
     motor_movement(t1,t2,t3,t4)
     print("The arm has reached the clearence position")
-    is_picked_up=retry()
-    if is_picked_up :
+    is_picked_up=retry(container[0],container[1],container)
+    if not is_picked_up :
         continue
     else:
         print(f"Moving to approch position of the {i+1} container")
@@ -263,7 +269,7 @@ for container in containers:
     print(f"Reached the final target position")
     gripper_action_open()
     print("Released the container")
-    
+
 
 
     
