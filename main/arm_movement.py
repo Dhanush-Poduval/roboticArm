@@ -10,6 +10,11 @@ global clearence_pos
 J1,J2,J3,J4=20,130,150,60
 containers=container_positions.values()
 ik_target_pos=list(containers)
+target_shelf_pos=[]
+
+for i in detected_aruco_positions.values():
+     target_shelf_pos.append(i)
+
 print("Containers seen are ")
 for i , c in enumerate(ik_target_pos):
     print(f"x={c[0]},y={c[1]:.2f},z={c[2]:.2f}")
@@ -220,7 +225,7 @@ for container in containers:
             print("Motion complete gripper should be at approach position")
             print("Moving to the final position of the container")
             final_position_ik=[container[0],container[1],container[2]-J4]
-            print("The final position coordinates are : {final_position_ik}")
+            print(f"The final position coordinates are : {final_position_ik}")
             print("Moving to the final position for container")
             theta1,theta2,theta3,theta4=inverse_kinematics(final_position_ik[0],final_position_ik[1],final_position_ik[2])
             print(f"Angles formed : {theta1,theta2,theta3,theta4}")
@@ -239,7 +244,13 @@ for container in containers:
             if is_picked_up :
                 continue
             else:
-                 print("Log:Pick up not successfull")
+                print("Log:Pick up not successfull")
+    print(f"Moving to target shelf positions : {target_shelf_pos}")
+    target_theta1,target_theta2,target_theta3,target_theta4=inverse_kinematics(target_shelf_pos[0],target_shelf_pos[1],target_shelf_pos[2])
+    print(f"Angles to move to target shelf clearence is : {target_theta1,target_theta2,target_theta3,target_theta4}")
+    motor_movement(target_theta1,target_theta2,target_theta3,target_theta4)
+    print("Reached the target shelf position")
+    
     
         
          
