@@ -249,7 +249,14 @@ for container in containers:
     target_theta1,target_theta2,target_theta3,target_theta4=inverse_kinematics(target_shelf_pos[0],target_shelf_pos[1],target_shelf_pos[2])
     print(f"Angles to move to target shelf clearence is : {target_theta1,target_theta2,target_theta3,target_theta4}")
     motor_movement(target_theta1,target_theta2,target_theta3,target_theta4)
-    print("Reached the target shelf position")
+    print("Reached the target shelf clearence position")
+    target_shelf_approach_pos=[target_shelf_pos[0],target_shelf_pos[1],target_shelf_pos[2]]
+    print(f"Movig to the target position approach :{target_shelf_approach_pos}")
+    tt1,tt2,tt3,tt4=inverse_kinematics(target_shelf_approach_pos[0],target_shelf_approach_pos[1],target_shelf_approach_pos[2])
+    print(f"angles formed : {tt1,tt2,tt3,tt4}")
+    motor_movement(tt1,tt2,tt3,tt4)
+    print(f"Reached the approach target pos")
+
     
     
         
