@@ -582,13 +582,11 @@ for container_name, world_pos in rack_positions.items():
                             grasped_container_id = -1
                             set_gripper_pos(robot_arm, gripper_open, duration_seconds=3)
                             container_obstacle(robot_arm, container_id, enable=1) 
-                        
-                        # Move straight up to clear the released container
                         '''
                         release_clear_pos_tip = [drop_pos[0], drop_pos[1], drop_pos[2] + APPROACH_HEIGHT_OFFSET]
                         release_clear_ik = [release_clear_pos_tip[0], release_clear_pos_tip[1] - length_EE, release_clear_pos_tip[2]]
                         '''
-                        print(f"\nMoving up to clear released container at: {target_shelf_clearence}")
+                        print(f"\nmoving to released shelf clearence : {target_shelf_clearence}")
                         joint_poses_clear_raw = p.calculateInverseKinematics(
                             bodyUniqueId=robot_arm, endEffectorLinkIndex=EE_LINK_INDEX, targetPosition=target_shelf_clearence,
                             restPoses=final_dest_shelf_final_position, maxNumIterations=100, jointDamping=JOINT_DAMPING,
@@ -597,9 +595,9 @@ for container_name, world_pos in rack_positions.items():
                             final_clear_poses = np.array(joint_poses_clear_raw[:4])
                             final_clear_poses[3] = -1 * (final_clear_poses[1] + final_clear_poses[2])
                             execute_pos(final_clear_poses, robot_arm, duration_seconds=1.0)
-                        
+                        #whole position thing needa to change 
                         print(f"Moving to clearence position : {clearance_pos_ik}")
-                        clearence_pos_final=p.calculateInverseKinematics(bodyUniqueId=robot_arm,endEffectorLinkIndex=EE_LINK_INDEX,targetPosition=clearance_pos_ik,restPoses=clearance_pos_ik,maxNumIterations=100,jointDamping=JOINT_DAMPING,lowerLimits=DEFAULT_LOWER_LIMITS,upperLimits=DEFAULT_UPPER_LIMITS,jointRanges=JOINT_RANGES)
+                        clearence_pos_final=p.calculateInverseKinematics(bodyUniqueId=robot_arm,endEffectorLinkIndex=EE_LINK_INDEX,targetPosition=clearance_pos_ik,restPoses=current_joint_angles,maxNumIterations=100,jointDamping=JOINT_DAMPING,lowerLimits=DEFAULT_LOWER_LIMITS,upperLimits=DEFAULT_UPPER_LIMITS,jointRanges=JOINT_RANGES)
                         if clearence_pos_final:
                             clearence_final=np.array(clearence_pos_final[:4])
                             clearence_final[3]=-1*(clearence_final[1]+clearence_final[2])
