@@ -268,7 +268,12 @@ for container in containers:
     motor_movement(final_angle1,final_angle2,final_angle3,final_angle4)
     print(f"Reached the final target position")
     gripper_action_open()
-    print("Released the container")
+    print("Released the container now moving back to clearence position")
+    c1,c2,c3,c4=inverse_kinematics(target_shelf_pos[0],target_shelf_pos[1],target_shelf_pos[2])
+    print(f"The angles formed are : {c1,c2,c3,c4}")
+    motor_movement(c1,c2,c3,c4)
+    
+
 
 
 
