@@ -109,90 +109,99 @@
             <inertia ixx="0.005" ixy="0" ixz="0" iyy="0.005" iyz="0" izz="0.005"/>
         </inertial>
     </link>
-
-    <!-- JOINT 4: WRIST PITCH (Connects to the new gripper base) -->
+    <!-- JOINT 4: WRIST PITCH -->
     <joint name="joint4_wrist_pitch" type="revolute">
         <origin xyz="0.5 0 0" rpy="0 0 0"/>
         <parent link="link3_forearm"/>
-        <child link="gripper_base"/> <!-- NEW CHILD LINK -->
-        <axis xyz="0 1 0"/> 
-        <limit effort="50.0" velocity="1.0" lower="-3.14" upper="3.14"/> 
+        <child link="gripper_base"/>
+        <axis xyz="0 1 0"/>
+        <limit effort="50.0" velocity="1.0" lower="-3.14" upper="3.14"/>
     </joint>
 
-    <!-- GRIPPER BASE LINK (Replaces tool_link) -->
+    <!-- GRIPPER BASE (BOTTOM PLATE) -->
     <link name="gripper_base">
         <visual>
-            <origin xyz="0.02 0 0" rpy="0 0 0"/>
-            <geometry><box size="0.04 0.08 0.02"/></geometry>
-            <material name="grey"/>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="meshes/gripper_plate_bottom.stl" scale="0.001 0.001 0.001"/>
+            </geometry>
         </visual>
         <collision>
-            <origin xyz="0.02 0 0" rpy="0 0 0"/>
-            <geometry><box size="0.04 0.08 0.02"/></geometry>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="meshes/gripper_plate_bottom.stl" scale="0.001 0.001 0.001"/>
+            </geometry>
         </collision>
         <inertial>
-            <origin xyz="0.02 0 0" rpy="0 0 0"/>
-            <mass value="0.1"/>
-            <inertia ixx="0.0005" ixy="0" ixz="0" iyy="0.0005" iyz="0" izz="0.0005"/>
+            <mass value="0.05"/>
+            <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
         </inertial>
     </link>
 
-    <!-- JOINT 5: LEFT GRIPPER FINGER (Prismatic movement) -->
+    <!-- TOP PLATE (FIXED TO BASE) -->
+    <link name="gripper_top_plate">
+        <visual>
+            <origin xyz="0 0 0.01" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="meshes/gripper_plate_top.stl" scale="0.001 0.001 0.001"/>
+            </geometry>
+        </visual>
+    </link>
+
+    <joint name="gripper_fixed_top" type="fixed">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <parent link="gripper_base"/>
+        <child link="gripper_top_plate"/>
+    </joint>
+
+    <!-- LEFT FINGER -->
     <joint name="gripper_joint_left" type="prismatic">
-        <origin xyz="0.04 0 0" rpy="0 0 0"/> <!-- Attachment point at the front center of gripper_base -->
+        <origin xyz="0 0.02 0" rpy="0 0 0"/>
         <parent link="gripper_base"/>
-        <child link="gripper_finger_left"/>
-        <axis xyz="0 1 0"/> <!-- Movement is along the Y-axis (positive direction) -->
-        <limit effort="10.0" velocity="0.5" lower="0.0" upper="0.03"/> <!-- 3 cm maximum travel -->
+        <child link="gripper_left"/>
+        <axis xyz="0 1 0"/>
+        <limit effort="20.0" velocity="0.3" lower="0.0" upper="0.03"/>
     </joint>
 
-    <!-- LINK 5: LEFT GRIPPER FINGER -->
-    <link name="gripper_finger_left">
+    <link name="gripper_left">
         <visual>
-            <!-- Offset in Y places the finger to the left side of the base -->
-            <!-- Offset in X moves the finger forward to look attached -->
-            <origin xyz="0.03 0.045 0" rpy="0 0 0"/>
-            <geometry><box size="0.06 0.015 0.02"/></geometry>
-            <material name="red"/>
+            <origin xyz="0 0.02 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="meshes/gripper_left.stl" scale="0.001 0.001 0.001"/>
+            </geometry>
         </visual>
         <collision>
-            <origin xyz="0.03 0.045 0" rpy="0 0 0"/>
-            <geometry><box size="0.06 0.015 0.02"/></geometry>
+            <origin xyz="0 0.02 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="meshes/gripper_left.stl" scale="0.001 0.001 0.001"/>
+            </geometry>
         </collision>
-        <inertial>
-            <origin xyz="0 0 0" rpy="0 0 0"/>
-            <mass value="0.05"/>
-            <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
-        </inertial>
     </link>
 
-    <!-- JOINT 6: RIGHT GRIPPER FINGER (Prismatic movement) -->
+    <!-- RIGHT FINGER -->
     <joint name="gripper_joint_right" type="prismatic">
-        <origin xyz="0.04 0 0" rpy="0 0 0"/> <!-- Attachment point at the front center of gripper_base -->
+        <origin xyz="0 -0.02 0" rpy="0 0 0"/>
         <parent link="gripper_base"/>
-        <child link="gripper_finger_right"/>
-        <axis xyz="0 -1 0"/> <!-- Movement is along the NEGATIVE Y-axis (opposite direction) -->
-        <limit effort="10.0" velocity="0.5" lower="0.0" upper="0.03"/> <!-- 3 cm maximum travel -->
-        <!-- Note: Same limits as the left finger, but the inverted axis (0 -1 0) makes it move symmetrically. -->
+        <child link="gripper_right"/>
+        <axis xyz="0 -1 0"/>
+        <limit effort="20.0" velocity="0.3" lower="0.0" upper="0.03"/>
     </joint>
 
-    <!-- LINK 6: RIGHT GRIPPER FINGER -->
-    <link name="gripper_finger_right">
+    <link name="gripper_right">
         <visual>
-            <!-- Offset in Y places the finger to the right side of the base (negative Y) -->
-            <origin xyz="0.03 -0.045 0" rpy="0 0 0"/>
-            <geometry><box size="0.06 0.015 0.02"/></geometry>
-            <material name="red"/>
+            <origin xyz="0 -0.02 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="meshes/gripper_right.stl" scale="0.001 0.001 0.001"/>
+            </geometry>
         </visual>
         <collision>
-            <origin xyz="0.03 -0.045 0" rpy="0 0 0"/>
-            <geometry><box size="0.06 0.015 0.02"/></geometry>
+            <origin xyz="0 -0.02 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="meshes/gripper_right.stl" scale="0.001 0.001 0.001"/>
+            </geometry>
         </collision>
-        <inertial>
-            <origin xyz="0 0 0" rpy="0 0 0"/>
-            <mass value="0.05"/>
-            <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
-        </inertial>
     </link>
+
+
 
 </robot>

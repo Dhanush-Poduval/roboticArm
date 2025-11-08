@@ -324,15 +324,15 @@ target_marker_id = p.createMultiBody(
     baseVisualShapeIndex=target_marker_visual,
     basePosition=target_pos_tip
 )
-clearance_pos_tip = [0.0, target_pos_ik[1]-0.4, 0.7] 
-clearance_pos_ik = [clearance_pos_tip[0], clearance_pos_tip[1]-length_EE, clearance_pos_tip[2]]
+clearance_pos_tip = [0.0, target_pos_ik[1]-0.4-length_EE, 0.7] 
+clearance_pos_ik = [clearance_pos_tip[0], clearance_pos_tip[1], clearance_pos_tip[2]]
 current_joint_angles = [state[0] for state in p.getJointStates(robot_arm, JOINT_INDICES)]
 
 
 print(f'\nmoving to clearence pos: {clearance_pos_tip}')
 
 joint_poses_clearence_raw = p.calculateInverseKinematics(
-    bodyUniqueId=robot_arm, endEffectorLinkIndex=EE_LINK_INDEX, targetPosition=clearance_pos_ik,
+    bodyUniqueId=robot_arm, endEffectorLinkIndex=EE_LINK_INDEX, targetPosition=clearance_pos_tip,
     restPoses=current_joint_angles, maxNumIterations=100,
     jointDamping=JOINT_DAMPING, lowerLimits=DEFAULT_LOWER_LIMITS, upperLimits=DEFAULT_UPPER_LIMITS, jointRanges=JOINT_RANGES
 )
@@ -597,7 +597,7 @@ for container_name, world_pos in rack_positions.items():
                             execute_pos(final_clear_poses, robot_arm, duration_seconds=1.0)
                         #whole position thing needa to change 
                         print(f"Moving to clearence position : {clearance_pos_ik}")
-                        clearence_pos_final=p.calculateInverseKinematics(bodyUniqueId=robot_arm,endEffectorLinkIndex=EE_LINK_INDEX,targetPosition=clearance_pos_ik,restPoses=current_joint_angles,maxNumIterations=100,jointDamping=JOINT_DAMPING,lowerLimits=DEFAULT_LOWER_LIMITS,upperLimits=DEFAULT_UPPER_LIMITS,jointRanges=JOINT_RANGES)
+                        clearence_pos_final=p.calculateInverseKinematics(bodyUniqueId=robot_arm,endEffectorLinkIndex=EE_LINK_INDEX,targetPosition=clearance_pos_tip,maxNumIterations=100,jointDamping=JOINT_DAMPING,lowerLimits=DEFAULT_LOWER_LIMITS,upperLimits=DEFAULT_UPPER_LIMITS,jointRanges=JOINT_RANGES)
                         if clearence_pos_final:
                             clearence_final=np.array(clearence_pos_final[:4])
                             clearence_final[3]=-1*(clearence_final[1]+clearence_final[2])
