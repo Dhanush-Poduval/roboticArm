@@ -1,10 +1,9 @@
-from main.check import run_object_detection
-from ..ik.inverse_k import is_valid
+from check import run_object_detection
+from inverse_k import is_valid
 import math
 import numpy as np
 import serial ,time
 import threading
-#this will be the ik function for easy access
 global clearence_pos
 J1,J2,J3,J4=20,130,150,60
 container_pos,aruco_pos=run_object_detection()
@@ -192,6 +191,7 @@ for container in containers:
     print("The arm has reached the clearence position")
     is_picked_up=retry(container[0],container[1],container)
     if not is_picked_up :
+        print(f"Log : picked up the container at position : {container[0],container[1],container[2]}")
         continue
     else:
         print(f"Moving to approch position of the {i+1} container")
@@ -220,6 +220,7 @@ for container in containers:
         print("The arm has reached the clearence position")
         is_picked_up=retry()
         if is_picked_up :
+            print(f"Log : picked up the container at position : {container[0],container[1],container[2]}")
             continue
         else:
             print(f"Moving to approch position of the {i+1} container")
@@ -248,6 +249,7 @@ for container in containers:
             print("The arm has reached the clearence position")
             is_picked_up=retry()
             if is_picked_up :
+                print(f"Log : picked up the container at position : {container[0],container[1],container[2]}")
                 continue
             else:
                 print("Log:Pick up not successfull")
@@ -272,7 +274,7 @@ for container in containers:
     c1,c2,c3,c4=inverse_kinematics(target_shelf_pos[0],target_shelf_pos[1],target_shelf_pos[2])
     print(f"The angles formed are : {c1,c2,c3,c4}")
     motor_movement(c1,c2,c3,c4)
-    
+
 
 
 

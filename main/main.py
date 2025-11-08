@@ -1,6 +1,6 @@
 from .check import detected_aruco_positions,container_positions
 from ..ik.motor_control import motor_movement
-from ..ik.inverse_k import is_valid
+from .inverse_k import is_valid
 import math
 import numpy as np
 import serial ,time
