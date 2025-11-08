@@ -4,10 +4,12 @@ import time
 import pybullet_data
 import math 
 import numpy as np
+import csv
+from datetime import datetime
 script_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(script_dir)
 urdf_path = os.path.join(parent_dir, 'four_dof_arm.urdf')
-
+path='arm_logs.csv'
 print(f"Final URDF Path: {urdf_path}") 
 if not os.path.exists(urdf_path):
     print("Not found")
@@ -21,7 +23,14 @@ print("\nPyBullet Joint Info")
 for i in range(p.getNumJoints(robot_arm)):
     joint_info = p.getJointInfo(robot_arm, i)
     print(f"Index {i}: Name '{joint_info[1].decode('utf-8')}', Type: {joint_info[2]}")
+def log_to_csv(container_id , shelf_id , status,coords , classification ):
 
+    timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with open(path, mode="a", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow(row)
+
+    row=[timestamp , container_id,shelf_id,classification,coords[0], coords[1], coords[2], status]
 EE_LINK_INDEX = 3
 LINK_RADIUS=0.05
 shelf_safety_margin=0.1
