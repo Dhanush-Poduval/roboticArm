@@ -5,5 +5,7 @@ __pycache__/
 *.json
 *.log
 *.tmp
+*.png
+generate_fake_ir_frames.py
 .DS_Store
 
