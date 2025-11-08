@@ -1,3 +1,5 @@
+.venv/
+requirements.txt
 __pycache__/
 *.csv
 *.json

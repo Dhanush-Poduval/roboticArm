@@ -28,6 +28,18 @@ def normalize_spectrum(df): #normalise data
     df['transmittance_norm'] = 100 * (t - t.min()) / (t.max() - t.min() + 1e-8)
     return df
 
+import matplotlib.pyplot as plt
+
+def plot_spectrum(df, title="Extracted Spectrum"):
+    plt.figure(figsize=(8,4))
+    plt.plot(df["wavenumber"], df["transmittance"], color='black', lw=1.5)
+    plt.gca().invert_xaxis()  # typical IR convention (4000→400)
+    plt.xlabel("Wavenumber (cm⁻¹)")
+    plt.ylabel("Transmittance (%)")
+    plt.title(title)
+    plt.tight_layout()
+    plt.show()
+
 
 def detect_peaks(df, prominence=1.0, distance=10): #peak detection
     #detects absorbance maxima by inverting the transmittance curve.
