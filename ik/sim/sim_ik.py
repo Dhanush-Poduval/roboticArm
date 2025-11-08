@@ -204,7 +204,7 @@ def execute_safe_pos(joint_target,robot_arm,duration=1.0,sim_time_per_step=1.0/2
         alpha=i/(steps-1)
         interpolated_pos=current_joint_angles*(1-alpha)+target_joint_angles*alpha
         interpolated_pos[3] = -1 * (interpolated_pos[1] + interpolated_pos[2])
-        for joint_index in JOINT_INDICES:
+        for joint_index in range(4):
          p.setJointMotorControl2(
             bodyUniqueId=robot_arm,
             jointIndex=joint_index,
@@ -324,15 +324,15 @@ target_marker_id = p.createMultiBody(
     baseVisualShapeIndex=target_marker_visual,
     basePosition=target_pos_tip
 )
-clearance_pos_tip = [0.0, target_pos_ik[1]-0.4, 0.7] 
-clearance_pos_ik = [clearance_pos_tip[0], clearance_pos_tip[1]-length_EE, clearance_pos_tip[2]]
+clearance_pos_tip = [0.0, target_pos_ik[1]-0.4-length_EE, 0.7] 
+clearance_pos_ik = [clearance_pos_tip[0], clearance_pos_tip[1], clearance_pos_tip[2]]
 current_joint_angles = [state[0] for state in p.getJointStates(robot_arm, JOINT_INDICES)]
 
 
 print(f'\nmoving to clearence pos: {clearance_pos_tip}')
 
 joint_poses_clearence_raw = p.calculateInverseKinematics(
-    bodyUniqueId=robot_arm, endEffectorLinkIndex=EE_LINK_INDEX, targetPosition=clearance_pos_ik,
+    bodyUniqueId=robot_arm, endEffectorLinkIndex=EE_LINK_INDEX, targetPosition=clearance_pos_tip,
     restPoses=current_joint_angles, maxNumIterations=100,
     jointDamping=JOINT_DAMPING, lowerLimits=DEFAULT_LOWER_LIMITS, upperLimits=DEFAULT_UPPER_LIMITS, jointRanges=JOINT_RANGES
 )
@@ -544,10 +544,12 @@ for container_name, world_pos in rack_positions.items():
                     '''
                     target_shelf_clearence=[-0.58,-0.4,0.78]
                     print(f"Moving to target shelf clearence :{target_shelf_clearence}")
-                    target_shelf_clearence_movement=p.calculateInverseKinematics(
+                    movement=p.calculateInverseKinematics(
+
                         bodyUniqueId=robot_arm,endEffectorLinkIndex=EE_LINK_INDEX,targetPosition=target_shelf_clearence,restPoses=current_angles_to_use, maxNumIterations=100, jointDamping=JOINT_DAMPING,
                         lowerLimits=DEFAULT_LOWER_LIMITS, upperLimits=DEFAULT_UPPER_LIMITS, jointRanges=JOINT_RANGES
                     )
+                    target_shelf_clearence_movement=movement[:4]
                     if target_shelf_clearence_movement:
                         final_dest_shelf_approach_position = np.array(target_shelf_clearence_movement[:4])
                         final_dest_shelf_approach_position[3] = -1 * (final_dest_shelf_approach_position[1] + final_dest_shelf_approach_position[2])
@@ -558,6 +560,7 @@ for container_name, world_pos in rack_positions.items():
                         print("IK solution for destination approach failed")
                         continue
                     dest_final_ik = [drop_approach_ik[0], drop_approach_ik[1] - length_EE, drop_approach_ik[2]] 
+                    '''
                     print(f"Moving to Final Drop Position : {dest_final_ik}")
                     
                     target_position_shelf_final_raw = p.calculateInverseKinematics(
@@ -574,24 +577,23 @@ for container_name, world_pos in rack_positions.items():
                             continue
                              
                         # Release the container and open the gripper
-                
-                        if grasped_container_id != -1 and gripper_constraint_id != -1:
+                    '''
+                    if grasped_container_id != -1 and gripper_constraint_id != -1:
                             print(f"Releasing container {container_name} at target shelf.")
                             p.removeConstraint(gripper_constraint_id)
                             gripper_constraint_id = -1
                             grasped_container_id = -1
                             set_gripper_pos(robot_arm, gripper_open, duration_seconds=3)
                             container_obstacle(robot_arm, container_id, enable=1) 
-                        '''
-                        release_clear_pos_tip = [drop_pos[0], drop_pos[1], drop_pos[2] + APPROACH_HEIGHT_OFFSET]
-                        release_clear_ik = [release_clear_pos_tip[0], release_clear_pos_tip[1] - length_EE, release_clear_pos_tip[2]]
-                        '''
-                        print(f"\nmoving to released shelf clearence : {target_shelf_clearence}")
-                        joint_poses_clear_raw = p.calculateInverseKinematics(
-                            bodyUniqueId=robot_arm, endEffectorLinkIndex=EE_LINK_INDEX, targetPosition=target_shelf_clearence,
-                            restPoses=final_dest_shelf_final_position, maxNumIterations=100, jointDamping=JOINT_DAMPING,
+                    '''
+                    release_clear_pos_tip = [drop_pos[0], drop_pos[1], drop_pos[2] + APPROACH_HEIGHT_OFFSET]
+                     release_clear_ik = [release_clear_pos_tip[0], release_clear_pos_tip[1] - length_EE, release_clear_pos_tip[2]]
+                    '''
+                    print(f"\nmoving to released shelf clearence : {target_shelf_clearence}")
+                    joint_poses_clear_raw = p.calculateInverseKinematics(
+                            bodyUniqueId=robot_arm, endEffectorLinkIndex=EE_LINK_INDEX, targetPosition=target_shelf_clearence, maxNumIterations=100, jointDamping=JOINT_DAMPING,
                             lowerLimits=DEFAULT_LOWER_LIMITS, upperLimits=DEFAULT_UPPER_LIMITS, jointRanges=JOINT_RANGES)
-                        if joint_poses_clear_raw:
+                    if joint_poses_clear_raw:
                             final_clear_poses = np.array(joint_poses_clear_raw[:4])
                             final_clear_poses[3] = -1 * (final_clear_poses[1] + final_clear_poses[2])
                             execute_pos(final_clear_poses, robot_arm, duration_seconds=1.0)
@@ -599,9 +601,9 @@ for container_name, world_pos in rack_positions.items():
                         print(f"Moving to the clearence position : {clearence_position}")
                         moving_back_to_clearence=p.calculateINverseKinematic()
                         #whole position thing needa to change 
-                        print(f"Moving to clearence position : {clearance_pos_ik}")
-                        clearence_pos_final=p.calculateInverseKinematics(bodyUniqueId=robot_arm,endEffectorLinkIndex=EE_LINK_INDEX,targetPosition=clearance_pos_ik,restPoses=current_joint_angles,maxNumIterations=100,jointDamping=JOINT_DAMPING,lowerLimits=DEFAULT_LOWER_LIMITS,upperLimits=DEFAULT_UPPER_LIMITS,jointRanges=JOINT_RANGES)
-                        if clearence_pos_final:
+                    print(f"Moving to clearence position : {clearance_pos_ik}")
+                    clearence_pos_final=p.calculateInverseKinematics(bodyUniqueId=robot_arm,endEffectorLinkIndex=EE_LINK_INDEX,targetPosition=clearance_pos_tip,maxNumIterations=100,jointDamping=JOINT_DAMPING,lowerLimits=DEFAULT_LOWER_LIMITS,upperLimits=DEFAULT_UPPER_LIMITS,jointRanges=JOINT_RANGES)
+                    if clearence_pos_final:
                             clearence_final=np.array(clearence_pos_final[:4])
                             clearence_final[3]=-1*(clearence_final[1]+clearence_final[2])
                             execute_pos(clearence_final,robot_arm,duration_seconds=1.0)
@@ -609,7 +611,7 @@ for container_name, world_pos in rack_positions.items():
 
                       
                             
-                    else:
+                else:
                         print("IK solution for destination final failed. Aborting drop.")
                         continue
                         

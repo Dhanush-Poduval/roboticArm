@@ -57,4 +57,4 @@ def run():
     target=p.getQuaternionFromEuler([0,0,0])
 
     for c_vision_id in containers_to_process:
-        pyb=CONT
+        pass

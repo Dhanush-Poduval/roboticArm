@@ -107,15 +107,18 @@ def motor_movement(angle1 , angle2 , angle3 , angle4):
 
     
     try:
-            command1=str(angle1) +'\n'
-            arduino.write(command1.encode('utf-8'))
-            command2=str(angle2)+'\n'
-            arduino.write(command2.encode('utf-8'))
-            command3=str(angle3)+'\n'
-            arduino.write(command3.encode('utf-8'))
-            command4=str(angle4)+'\n'
-            arduino.write(command4.encode('utf-8'))
-            print(f"All the angles sent {angle1,angle2,angle3,angle4}")
+            # command1=str(angle1) +'\n'
+            # arduino.write(command1.encode('utf-8'))
+            # command2=str(angle2)+'\n'
+            # arduino.write(command2.encode('utf-8'))
+            # command3=str(angle3)+'\n'
+            # arduino.write(command3.encode('utf-8'))
+            # command4=str(angle4)+'\n'
+            # arduino.write(command4.encode('utf-8'))
+            # print(f"All the angles sent {angle1,angle2,angle3,angle4}")
+            command=f"{math.degrees(angle1)},{math.degrees(angle2)},{math.degrees(angle3)},{math.degrees(angle4)}\n"
+            arduino.write(command.encode('utf-8'))
+            print(f"The angles values are that are being moved : {command.strip()}")
 
     except Exception as e:
             print(f"Error :  {e}")
