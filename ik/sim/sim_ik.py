@@ -215,7 +215,12 @@ def execute_safe_pos(joint_target,robot_arm,duration=1.0,sim_time_per_step=1.0/2
          )
         p.stepSimulation()
         time.sleep(sim_time_per_step)
-    p.stepSimulation() 
+    p.stepSimulation()
+    settling_time = 0.1 # seconds
+    settling_steps = int(settling_time / sim_time_per_step)
+    for _ in range(settling_steps):
+        p.stepSimulation()
+        time.sleep(sim_time_per_step)
     if check_collision(robot_arm, SHELF_OBSTACLE_IDS, dist=0.001):
         print("Final position resulted in collision.")
         return False
@@ -542,11 +547,11 @@ for container_name, world_pos in rack_positions.items():
                         print("IK solution for destination approach failed. Aborting drop.")
                         continue
                     '''
-                    target_shelf_clearence=[-0.58,-0.4,0.78]
+                    target_shelf_clearence=[-0.58,0.0,0.78]
                     print(f"Moving to target shelf clearence :{target_shelf_clearence}")
                     movement=p.calculateInverseKinematics(
 
-                        bodyUniqueId=robot_arm,endEffectorLinkIndex=EE_LINK_INDEX,targetPosition=target_shelf_clearence,restPoses=current_angles_to_use, maxNumIterations=100, jointDamping=JOINT_DAMPING,
+                        bodyUniqueId=robot_arm,endEffectorLinkIndex=EE_LINK_INDEX,targetPosition=target_pos_ik,restPoses=current_angles_to_use, maxNumIterations=100, jointDamping=JOINT_DAMPING,
                         lowerLimits=DEFAULT_LOWER_LIMITS, upperLimits=DEFAULT_UPPER_LIMITS, jointRanges=JOINT_RANGES
                     )
                     target_shelf_clearence_movement=movement[:4]
@@ -560,7 +565,7 @@ for container_name, world_pos in rack_positions.items():
                         print("IK solution for destination approach failed")
                         continue
                     dest_final_ik = [drop_approach_ik[0], drop_approach_ik[1] - length_EE, drop_approach_ik[2]] 
-                    '''
+                    
                     print(f"Moving to Final Drop Position : {dest_final_ik}")
                     
                     target_position_shelf_final_raw = p.calculateInverseKinematics(
@@ -576,8 +581,8 @@ for container_name, world_pos in rack_positions.items():
                             print("Final Drop Move FAILED. Aborting drop.")
                             continue
                              
-                        # Release the container and open the gripper
-                    '''
+                    # Release the container and open the gripper
+                    
                     if grasped_container_id != -1 and gripper_constraint_id != -1:
                             print(f"Releasing container {container_name} at target shelf.")
                             p.removeConstraint(gripper_constraint_id)
@@ -609,7 +614,7 @@ for container_name, world_pos in rack_positions.items():
                       
                             
                 else:
-                        print("IK solution for destination final failed. Aborting drop.")
+                        print("IK solution for destination final failed.")
                         continue
                         
             
