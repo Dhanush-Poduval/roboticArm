@@ -204,7 +204,7 @@ def execute_safe_pos(joint_target,robot_arm,duration=1.0,sim_time_per_step=1.0/2
         alpha=i/(steps-1)
         interpolated_pos=current_joint_angles*(1-alpha)+target_joint_angles*alpha
         interpolated_pos[3] = -1 * (interpolated_pos[1] + interpolated_pos[2])
-        for joint_index in JOINT_INDICES:
+        for joint_index in range(4):
          p.setJointMotorControl2(
             bodyUniqueId=robot_arm,
             jointIndex=joint_index,
@@ -220,15 +220,26 @@ def execute_safe_pos(joint_target,robot_arm,duration=1.0,sim_time_per_step=1.0/2
         print("Final position resulted in collision.")
         return False
     return True
-def set_gripper_pos(robot_id, open_amount, duration_seconds=1.0):
-    left_joint = 4
-    right_joint = 5
-
-    p.setJointMotorControl2(robot_id, left_joint, p.POSITION_CONTROL, open_amount)
-    p.setJointMotorControl2(robot_id, right_joint, p.POSITION_CONTROL, -open_amount)
-
-    for _ in range(int(duration_seconds / (1/240))):
+def set_gripper_pos(robot_arm,position,duration_seconds=0.5,sim_time=1.0/240.0):
+    target_position_left=position
+    target_position_right = position
+    steps=int(duration_seconds/sim_time)
+    if steps<2:steps=2
+    for joint_index in griper_join_indices:
+        target_val = target_position_left if joint_index ==gripper_left  else target_position_right
+        
+        p.setJointMotorControl2(
+            bodyUniqueId=robot_arm,
+            jointIndex=joint_index,
+            controlMode=p.POSITION_CONTROL,
+            targetPosition=target_val,
+            maxVelocity=1.0,
+            force=gripper_max_force
+        )
+    
+    for _ in range(steps):
         p.stepSimulation()
+        time.sleep(sim_time)
     print("Gripper action complete.")
 
 def container_obstacle(robot,container_id,enable=1):
@@ -287,8 +298,7 @@ def load_container(name,position):
     return container_id
     
 def execute_pos(joint_target, robot_arm_id, duration_seconds=1.0, sim_time_per_step=1.0 / 240.0):
-    for joint_index in range(4):
-     return execute_safe_pos(joint_target,robot_arm_id,duration_seconds,sim_time_per_step)
+    return execute_safe_pos(joint_target,robot_arm_id,duration_seconds,sim_time_per_step)
 
 for name,pos in rack_positions.items():
    containers[name]=load_container(name,pos)
@@ -534,10 +544,12 @@ for container_name, world_pos in rack_positions.items():
                     '''
                     target_shelf_clearence=[-0.58,-0.4,0.78]
                     print(f"Moving to target shelf clearence :{target_shelf_clearence}")
-                    target_shelf_clearence_movement=p.calculateInverseKinematics(
+                    movement=p.calculateInverseKinematics(
+
                         bodyUniqueId=robot_arm,endEffectorLinkIndex=EE_LINK_INDEX,targetPosition=target_shelf_clearence,restPoses=current_angles_to_use, maxNumIterations=100, jointDamping=JOINT_DAMPING,
                         lowerLimits=DEFAULT_LOWER_LIMITS, upperLimits=DEFAULT_UPPER_LIMITS, jointRanges=JOINT_RANGES
                     )
+                    target_shelf_clearence_movement=movement[:4]
                     if target_shelf_clearence_movement:
                         final_dest_shelf_approach_position = np.array(target_shelf_clearence_movement[:4])
                         final_dest_shelf_approach_position[3] = -1 * (final_dest_shelf_approach_position[1] + final_dest_shelf_approach_position[2])
