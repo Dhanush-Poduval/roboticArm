@@ -91,9 +91,9 @@ shelf_z_level=[
 ]
 
 dest_shelf_thickness=0.03
-dest_shelf_height=0.4
+dest_shelf_height=1.2
 dest_shelf_width=0.5
-dest_shelf_depth=0.4
+dest_shelf_depth=1.2
 
 dest_shelf_pos=np.array([-1.1,-0.15,0.5])
 dest_shelf_floor_half = [dest_shelf_width / 2, dest_shelf_depth / 2, dest_shelf_thickness / 2]
@@ -119,9 +119,9 @@ rack_positions={
     'C09': (0.4, 0.9, container_base_z+0.5),
 }
 target_shelf={
-    '1':(-1.26,-0.17+0.03,dest_shelf+0.1),
-    '2':(-1.26,-0.17+0.04,dest_shelf+0.1),
-    '3':(-1.26,-0.17+0.05,dest_shelf+0.1)
+    '1':(-1.2,-0.15,dest_shelf+0.1),
+    '2':(-1.2,+0.15,dest_shelf+0.1),
+    '3':(-1.2,-0.20,dest_shelf+0.1)
 }
 target_shelf_list=list(target_shelf.items())
 shelf_index=0
