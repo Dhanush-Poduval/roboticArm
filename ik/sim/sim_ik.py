@@ -547,7 +547,7 @@ for container_name, world_pos in rack_positions.items():
                         print("IK solution for destination approach failed. Aborting drop.")
                         continue
                     '''
-                    target_shelf_clearence=[-0.58,0.0,0.78]
+                    target_shelf_clearence=[-1.1,0.0,0.78]
                     print(f"Moving to target shelf clearence :{target_shelf_clearence}")
                     movement=p.calculateInverseKinematics(
 
@@ -564,7 +564,7 @@ for container_name, world_pos in rack_positions.items():
                     else:
                         print("IK solution for destination approach failed")
                         continue
-                    dest_final_ik = [drop_approach_ik[0], drop_approach_ik[1] - length_EE, drop_approach_ik[2]] 
+                    dest_final_ik = [drop_approach_ik[0], drop_approach_ik[1], drop_approach_ik[2]] 
                     
                     print(f"Moving to Final Drop Position : {dest_final_ik}")
                     
