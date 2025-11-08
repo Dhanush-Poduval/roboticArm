@@ -583,8 +583,8 @@ for container_name, world_pos in rack_positions.items():
                             p.removeConstraint(gripper_constraint_id)
                             gripper_constraint_id = -1
                             grasped_container_id = -1
-                            set_gripper_pos(robot_arm, gripper_open, duration_seconds=3)
-                            container_obstacle(robot_arm, container_id, enable=1) 
+                    set_gripper_pos(robot_arm, gripper_open, duration_seconds=1)
+                    container_obstacle(robot_arm, container_id, enable=1) 
                     '''
                     release_clear_pos_tip = [drop_pos[0], drop_pos[1], drop_pos[2] + APPROACH_HEIGHT_OFFSET]
                      release_clear_ik = [release_clear_pos_tip[0], release_clear_pos_tip[1] - length_EE, release_clear_pos_tip[2]]
