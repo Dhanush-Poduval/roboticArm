@@ -31,29 +31,35 @@ python3 check.py
 
 The structure of the whole code 
 
-├── /classifier
-│   └──ir_classifier.py
-│   └── main.py
-│   └── output_handler.py
-|   └── preprocess_spectrum.py
-|   └── read_raw_spectrum.py
+.
+├── classifier/
+│   ├── .gitignore
+│   ├── ir_classifier.py
+│   ├── main.py
+│   ├── output_handler.py
+│   ├── preprocess_spectrum.py
+│   └── read_raw_spectrum.py
+├── communication/
 ├── ik/
-│   └── dh.py
-│   └── motor_control.py
-|   └── fk.py
-|   └── four_dof_arm.py
-|   ├── sim
-|     └──sim_ik.py
-|     └── vision.py
-|   ├── meshes
-|     └──consists all the mesh detail file
-|
-├── main
-├  └──check.py
-├  └── inverse_k.py
-├  └── main.py
-└  └── arm_movement.py
-|  └──callibration.py
-├── README.md
-├── requirements.txt
-└── .gitignore
+├── main/
+│   ├── __pycache__/
+│   ├── arm_movement.py
+│   ├── calibration.py
+│   ├── check.py
+│   ├── inverse_k.py
+│   ├── main.py
+│   ├── motion_control.py
+│   ├── vision_data.json
+│   └── yolov5s.pt
+├── venv/
+├── yolov5/
+│   ├── .gitignore
+│   ├── datasets.yaml
+│   ├── detect.py
+│   ├── setup.py
+│   └── yolov5s.pt
+├── .gitignore
+├── datasets.yaml
+├── detect.py
+├── setup.py
+└── yolov5s.pt
