@@ -5,12 +5,11 @@ read_raw_spectrum.py
 This module represents the interface between the spectroscopy sensor and
 the classification system.
 
-For now, it runs in **simulation mode**, where a grayscale image
+For now, it runs in a simulation mode, where a grayscale image
 (simulated frame of the diffraction pattern) is read and converted into
 a 1-D spectrum.
 
-When the real hardware (e.g. ESP32 + OV7670) is available, you’ll only
-need to uncomment and complete the sensor block in `capture_spectrum()`.
+When the real hardware (e.g. ESP32 + OV7670) is available, it can be integrated using the capture_spectrum function
 
 Outputs:
     list of dicts like:
@@ -33,7 +32,7 @@ import time
 def start_acquisition():
     """Simulate powering up or initializing the spectrometer."""
     print("[ACQ] Sensor initializing...")
-    time.sleep(0.5)
+    time.sleep(1.0)
     print("[ACQ] Sensor ready for capture.")
 
 
