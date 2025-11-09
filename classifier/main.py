@@ -1,67 +1,81 @@
 # main.py
+# ============================================
+# IR-BASED CLASSIFICATION SYSTEM - MAIN CONTROLLER
+# ============================================
 
 import time
 import traceback
-from datetime import datetime
-
-from read_raw_spectrum import read_raw_spectrum
+from read_raw_spectrum import start_acquisition, capture_spectrum, stop_acquisition
 from preprocess_spectrum import preprocess_spectrum
 from ir_classifier import classify_sample
-from output_handler import log_result, send_to_arm
-
-def setup():
-    print("=" * 60)
-    print("IR-BASED CLASSIFICATION SYSTEM - MAIN CONTROLLER")
-    print(f"Startup time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print("=" * 60)
-    print("System is initializing modules...")
-    time.sleep(1)
-    print("Modules loaded successfully.\n")
+from output_handler import log_result
+# from output_handler import send_to_arm   # uncomment when ready
 
 
-def process_sample():
+def process_one(image_path):
+    """
+    Process a single sample (one image or one sensor reading).
+    This simulates the workflow for one robotic arm cycle.
+    """
     try:
-        raw = read_raw_spectrum()
-        if not raw or len(raw) == 0:
-            print("[WARN] Empty sensor data received. Skipping cycle.")
-            return
+        print(f"\n============================================================")
+        print(f"Processing sample: {image_path}")
+        print(f"============================================================")
 
+        start_acquisition()  # turn on / prepare the sensor
+        raw = capture_spectrum(image_path)  # capture one spectrum frame
         peaks = preprocess_spectrum(raw)
-        if peaks.empty:
+
+        if hasattr(peaks, "empty") and peaks.empty:
             print("[WARN] No peaks detected in current spectrum.")
+            stop_acquisition()
             return
 
         result = classify_sample(peaks)
         print(f"[RESULT] Category: {result['category']} | Elements: {','.join(result['detected_elements'])}")
 
         log_result(result)
-        #will add this function later once arm interface is figured out
-        #send_to_arm(result)
+        # send_to_arm(result)  # future integration
+
+        stop_acquisition()  # safely stop the sensor
+        time.sleep(1)  # small pause before next sample
 
     except Exception as e:
         print(f"[ERROR] {e}")
         traceback.print_exc()
+        stop_acquisition()
         time.sleep(1)
 
 
-def main_loop(delay=2):
-    setup()
-    print(f"System running... Press Ctrl+C to stop.\n")
+def process_many(image_paths):
+    """
+    Simulate multiple samples being analyzed sequentially.
+    (Like the robotic arm bringing one sample at a time.)
+    """
+    for img in image_paths:
+        process_one(img)
 
-    try:
-        while True:
-            process_sample()
-            time.sleep(delay)  # wait before next measurement
+"""from preprocess_spectrum import plot_spectrum
 
-    except KeyboardInterrupt:
-        print("System stopped manually by user.")
-    except Exception as e:
-        print(f"[FATAL ERROR] {e}")
-        traceback.print_exc()
-    finally:
-        print("Cleanup complete. Exiting safely.")
-
+peaks = preprocess_spectrum(raw)
+plot_spectrum(peaks, title=f"Spectrum for {image_path}")
+"""
 
 if __name__ == "__main__":
-    main_loop(delay=2)
+    # List of sample images (simulated frames)
+    sample_images = [
+        "data/sample1.png",
+        "data/sample2.png",
+        "data/sample3.png"
+    ]
+
+    print("\n============================================================")
+    print("IR-BASED CLASSIFICATION SYSTEM - MAIN CONTROLLER")
+    print(f"Startup time: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print("============================================================")
+
+    print("\nSystem initialized. Starting multi-sample processing...\n")
+    process_many(sample_images)
+
+    print("\nAll samples processed successfully. System exiting.\n")
 
