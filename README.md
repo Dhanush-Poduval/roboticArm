@@ -30,7 +30,7 @@ python3 check.py
 ## File structure
 
 The structure of the whole code 
-
+```
 .
 ├── classifier/
 │   ├── .gitignore
@@ -63,3 +63,4 @@ The structure of the whole code
 ├── detect.py
 ├── setup.py
 └── yolov5s.pt
+```
