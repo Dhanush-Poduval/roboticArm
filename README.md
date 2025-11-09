@@ -26,3 +26,34 @@ Object detection
 cd main
 python3 check.py
 ```
+
+## File structure
+
+The structure of the whole code 
+
+├── /classifier
+│   └──ir_classifier.py
+│   └── main.py
+│   └── output_handler.py
+|   └── preprocess_spectrum.py
+|   └── read_raw_spectrum.py
+├── ik/
+│   └── dh.py
+│   └── motor_control.py
+|   └── fk.py
+|   └── four_dof_arm.py
+|   ├── sim
+|     └──sim_ik.py
+|     └── vision.py
+|   ├── meshes
+|     └──consists all the mesh detail file
+|
+├── main
+├  └──check.py
+├  └── inverse_k.py
+├  └── main.py
+└  └── arm_movement.py
+|  └──callibration.py
+├── README.md
+├── requirements.txt
+└── .gitignore
