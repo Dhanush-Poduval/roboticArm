@@ -1,9 +1,9 @@
 # Robotic Arm
-This is the main code base for the Dexter ,containes the communication , classifiaction and autonomous movement code base
+This is the main code base for Dexter ,containes the communication , classifiaction and autonomous movement code base
 
 ## Instalation
 ```bash
-python3 -m venv ven
+python3 -m venv venv
 
 source venv/bin/activate
 
@@ -31,7 +31,7 @@ python3 check.py
 
 The structure of the whole code 
 ```
-.
+
 ├── classifier
 │   ├── .gitignore
 │   ├── ir_classifier.py
@@ -45,7 +45,7 @@ The structure of the whole code
 │   ├── diagnostics_logger.py
 │   └── network_check.py
 ├── ik
-├── m
+├── main
 │   ├── __pycache__
 │   ├── yolov5
 │   ├── arm_movement.py
